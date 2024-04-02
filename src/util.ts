@@ -6,6 +6,10 @@ export function humanToUint(amountHuman: BigNumber, decimals: number): number {
     return amountHuman.multipliedBy(BigNumber(10).pow(decimals)).decimalPlaces(0).toNumber()
 }
 
+export function uintToHuman(amountUint: number, decimals: number): BigNumber {
+    return BigNumber(amountUint).dividedBy(BigNumber(10).pow(decimals)).decimalPlaces(decimals)
+}
+
 export async function makeUnsignedTransaction(from: string, to: string, amountHuman: BigNumber) {
     const functionSelector = 'transfer(address,uint256)';
     const amountUint = humanToUint(amountHuman, USDTDecimals)

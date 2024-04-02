@@ -2,6 +2,7 @@ import fastify from 'fastify'
 import cors from '@fastify/cors'
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import 'dotenv/config'
+import { globalPino } from "./constants"
 
 export const app = fastify().withTypeProvider<TypeBoxTypeProvider>()
 
@@ -15,10 +16,14 @@ app.get('/', function (request, reply) {
     reply.send('ha-ha!')
 })
 
+app.setErrorHandler(function (error, request, reply) {
+    globalPino.error({ msg: "Got an error!", errorName: error.name, errorMessage: error.message, errorStack: error.stack })
+    return reply.code(500).send({ error: "Internal Server Error. Contact the developer immediately!" })
+})
+
 // 404 handler
 app.setNotFoundHandler((request, reply) => {
     const message = `Route ${request.method}:${request.url} not found`
-    console.log(message)
     reply.code(404).send({
         message: message,
         error: 'Not Found',

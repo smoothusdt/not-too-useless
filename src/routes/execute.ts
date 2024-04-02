@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox'
 import { app } from "../app";
 import { DecodedUsdtTx, decodeUsdtTransaction } from '../encoding';
 import { broadcastTx, calculateQuote, getUsdtBalance, sendTrx } from '../network';
-import { AnanasFeeCollector } from '../constants';
+import { AnanasFeeCollector, globalPino } from '../constants';
 import { buyEnergy } from '../energy';
 
 const schema = {
@@ -13,6 +13,12 @@ const schema = {
 }
 
 app.post('/execute', { schema }, async function (request, reply) {
+    const pino = globalPino.child({ requestId: crypto.randomUUID() })
+    pino.info({
+        msg: "Got a new request!",
+        url: request.url,
+        requestBody: request.body
+    })
     const { mainTx, feeTx } = request.body
 
     let decodedMainTx: DecodedUsdtTx
@@ -38,13 +44,20 @@ app.post('/execute', { schema }, async function (request, reply) {
         return reply.code(429).send({ error: `Either mainTx or feeTx was signed incorrectly. The signed has to be the person from whom USDT is being sent, which is ${senderBase58Address}` })
     }
 
-    const userBalance = await getUsdtBalance(decodedMainTx.fromBase58Address)
+    const userBalance = await getUsdtBalance(senderBase58Address, pino)
     const userWantsToSend = decodedMainTx.amountHuman.plus(decodedFeeTx.amountHuman)
     if (userBalance < userWantsToSend) {
         return reply.code(429).send({ error: `The user needs to have at least ${userWantsToSend} USDT, but they only have ${userBalance}` })
     }
 
-    const { totalFeeUSDT, sumEnergyNeeded, trxNeeded } = await calculateQuote(decodedMainTx.toBase58Address)
+    const {
+        totalFeeUSDT,
+        energyToBuy,
+        sunToSpendForEnergy,
+        trxNeeded,
+        rawTGQuote,
+    } = await calculateQuote(senderBase58Address, pino)
+
     if (decodedFeeTx.amountHuman < totalFeeUSDT) {
         return reply.code(429).send({ error: `The fee must be at least ${totalFeeUSDT}, but feeTx transfers only ${decodedFeeTx.amountHuman} USDT` })
     }
@@ -53,16 +66,20 @@ app.post('/execute', { schema }, async function (request, reply) {
         return reply.code(429).send({ error: `the recipient in the feeTx must be ${AnanasFeeCollector}, but it was ${decodedFeeTx.toBase58Address}` })
     }
 
-    // User's input validated! Return the tx id and then actually execute the transaction. 
+    pino.info({ msg: "Data submitted by the user is valid! Executing the transfer now!" })
+    // Returning the tx ID to make the request not take too much time 
     reply.code(200).send({
         mainTxID: decodedMainTx.txID
     })
 
     // Fund the account with the resources
-    await buyEnergy(sumEnergyNeeded, decodedMainTx.fromBase58Address)
-    await sendTrx(senderBase58Address, trxNeeded)
+    await buyEnergy(energyToBuy, sunToSpendForEnergy, senderBase58Address, rawTGQuote, pino)
+    await sendTrx(trxNeeded, senderBase58Address, pino)
 
     // Execute the transactions
-    await broadcastTx(decodedFeeTx, feeTx.signature)
-    await broadcastTx(decodedMainTx, mainTx.signature)
+    await broadcastTx(decodedFeeTx, feeTx.signature, pino)
+    pino.info({ msg: "Successfully executed the fee transaction!" })
+
+    await broadcastTx(decodedMainTx, mainTx.signature, pino)
+    pino.info({ msg: "Successfully executed the actual transfer transaction!" })
 })
