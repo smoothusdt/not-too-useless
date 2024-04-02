@@ -1,14 +1,15 @@
 import { BigNumber } from "tronweb"
-import { USDTContract, tronWeb } from "./constants"
+import { AnanasFeeUSDT, TRXDecimals, TrxSingleTxBandwidth, USDTContract, USDTDecimals, tronWeb } from "./constants"
 import { DecodedUsdtTx, decodeUsdtTransaction } from "./encoding"
+import { humanToUint } from "./util"
 
 // Update automatically by a background task
 interface EnergyDataInterface {
     // The recipient does not own USDT yet
-    usdtTransferToEmptyAccout: BigNumber
+    usdtTransferToEmptyAccout: number
 
     // The recipient already has USDT
-    usdtTransferToHolder: BigNumber
+    usdtTransferToHolder: number
 
     // Price on tokengoodies.com for energy
     trxPerEnergyUnit: BigNumber
@@ -23,8 +24,8 @@ interface EnergyDataInterface {
 
 // MUST always have the latest fee data
 export let latestEnergyData: EnergyDataInterface = {
-    usdtTransferToEmptyAccout: new BigNumber(64895),
-    usdtTransferToHolder: new BigNumber(31895),
+    usdtTransferToEmptyAccout: 64895,
+    usdtTransferToHolder: 31895,
     trxPerEnergyUnit: new BigNumber(0.00009),
     usdtPerTrx: new BigNumber(0.12),
     setAt: new Date(),
@@ -38,12 +39,44 @@ export async function updateEnergyData() {
 
 }
 
+export async function calculateQuote(recipient: string) {
+    const actualTransferEnergy = await estimateTransferEnergy(recipient)
+    // The fee collector surely has some USDT already
+    const feeTransferEnergy = latestEnergyData.usdtTransferToHolder
+    const sumEnergyNeeded = actualTransferEnergy + feeTransferEnergy
+
+    const trxForEnergy = BigNumber(sumEnergyNeeded).multipliedBy(latestEnergyData.trxPerEnergyUnit)
+    const usdtForEnergy = trxForEnergy.multipliedBy(latestEnergyData.usdtPerTrx)
+
+    const trxForBandwidth = TrxSingleTxBandwidth.multipliedBy(2)
+    const usdtForBandwidth = trxForBandwidth.multipliedBy(latestEnergyData.usdtPerTrx)
+
+    const networkFeeUSDT = usdtForEnergy.plus(usdtForBandwidth)
+    const feeWithMarkup = networkFeeUSDT.plus(AnanasFeeUSDT)
+
+    return {
+        totalFeeUSDT: feeWithMarkup,
+        sumEnergyNeeded,
+        trxNeeded: trxForBandwidth
+    }
+}
+
+/**
+ * Fetches USDT balance for the given address and returns it in a human-readable format
+ * @param address 
+ */
+export async function getUsdtBalance(address: string): Promise<BigNumber> {
+    const balanceUint: BigNumber = await USDTContract.methods.balanceOf(address)
+    const balanceHuman: BigNumber = balanceUint.dividedBy(BigNumber(10).pow(USDTDecimals))
+    return balanceHuman
+}
+
 /**
  * Gets a detailed estimate on how much energy is needed for a USDT transfer
  * @param recipient 
  * @returns 
  */
-export async function getTransferEnergyEstimate(recipient: string): Promise<BigNumber> {
+export async function estimateTransferEnergy(recipient: string): Promise<number> {
     const recipientUsdtBalance: BigNumber = await USDTContract.methods.balanceOf(recipient).call();
 
     if (recipientUsdtBalance.eq(0)) {
@@ -56,7 +89,7 @@ export async function getTransferEnergyEstimate(recipient: string): Promise<BigN
 
 export async function broadcastTx(decodedTx: DecodedUsdtTx, signature: string) {
     const fullSendData = {
-        visible: false, // always using hex addresses
+        visible: false, // false = hex (not base58) addresses are used
         txID: decodedTx.txID,
         raw_data: decodedTx.rawData,
         raw_data_hex: decodedTx.rawDataHex,
@@ -65,4 +98,9 @@ export async function broadcastTx(decodedTx: DecodedUsdtTx, signature: string) {
     console.log('Re-computed transaction:', JSON.stringify(fullSendData))
     const result = await tronWeb.trx.sendRawTransaction(fullSendData)
     console.log('Broadcasted a transaction:', result)
+}
+
+export async function sendTrx(to: string, amountHuman: BigNumber) {
+    const amountUint = humanToUint(amountHuman, TRXDecimals)
+    await tronWeb.trx.sendTrx(to, amountUint)
 }

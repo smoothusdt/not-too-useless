@@ -2,11 +2,11 @@ import assert from "assert"
 import protobuf from "protobufjs"
 import { BigNumber } from "tronweb"
 import { Hex, bytesToHex, hexToBigInt, hexToBytes, size, sliceHex } from "viem"
-import { hexToBase58Address } from "./util"
+import { hexToBase58Address, recoverSigner } from "./util"
 import { USDTDecimals } from "./constants"
 import { sha256 } from "js-sha256"
 
-const root = protobuf.loadSync('src/random/transaction.proto')
+const root = protobuf.loadSync('src/transaction.proto')
 const Raw = root.lookupType("Transaction.raw")
 
 export interface DecodedUsdtTx {
@@ -25,9 +25,12 @@ export interface DecodedUsdtTx {
 
     amountUint: BigNumber,
     amountHuman: BigNumber
+
+    signerHexAddress: string,
+    signerBase58Address: string,
 }
 
-export function decodeUsdtTransaction(rawDataHex: Hex): DecodedUsdtTx {
+export function decodeUsdtTransaction({ rawDataHex, signature }: { rawDataHex: Hex, signature: string }): DecodedUsdtTx {
     const rawDataBytes = hexToBytes(rawDataHex)
     const decodedRawData = Raw.decode(rawDataBytes) as any
     const txID = sha256(rawDataBytes)
@@ -75,8 +78,6 @@ export function decodeUsdtTransaction(rawDataHex: Hex): DecodedUsdtTx {
     const contractBase58Address = hexToBase58Address(contractHexAddress)
     const toBase58Address = hexToBase58Address(toHexAddress)
 
-    console.log('Decoded:', decodedRawData)
-    console.log('Decoded timestamp:', decodedRawData.timestamp, parseInt(decodedRawData.timestamp))
     const rawDataFormatted = {
         contract: [{
             parameter: {
@@ -96,7 +97,8 @@ export function decodeUsdtTransaction(rawDataHex: Hex): DecodedUsdtTx {
         fee_limit: parseInt(decodedRawData.feeLimit),
         timestamp: parseInt(decodedRawData.timestamp),
     }
-
+    
+    const { signerHexAddress, signerBase58Address } = recoverSigner(txID, signature)
     return {
         rawDataHex: rawDataHex.slice(2),
         rawData: rawDataFormatted,
@@ -112,6 +114,9 @@ export function decodeUsdtTransaction(rawDataHex: Hex): DecodedUsdtTx {
         toBase58Address,
 
         amountUint,
-        amountHuman
+        amountHuman,
+
+        signerHexAddress,
+        signerBase58Address,
     }
 }
