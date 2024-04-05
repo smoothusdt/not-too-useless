@@ -18,7 +18,7 @@ app.get('/', function (request, reply) {
 
 app.setErrorHandler(function (error, request, reply) {
     globalPino.error({ msg: "Got an error!", errorName: error.name, errorMessage: error.message, errorStack: error.stack })
-    return reply.code(500).send({ success: false, error: "Internal Server Error. Contact the developer immediately!" })
+    return reply.code(500).send({ success: false, error: error.message })
 })
 
 // 404 handler
