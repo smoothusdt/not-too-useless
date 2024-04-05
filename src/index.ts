@@ -1,3 +1,7 @@
+// load .env variables. Has to be at the very very beginning.
+import dotenv from "dotenv"
+dotenv.config()
+
 import { app } from './app'
 import './routes'
 

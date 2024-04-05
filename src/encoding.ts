@@ -74,6 +74,10 @@ export function decodeUsdtTransaction({ rawDataHex, signature }: { rawDataHex: H
     contractHexAddress = contractHexAddress.slice(2)
     toHexAddress = toHexAddress.slice(2)
 
+    // for some reason, `to` address is decoded with '00' at the beginning
+    // instead of '41'. Fixing it here.
+    toHexAddress = '41' + toHexAddress.slice(2)
+
     const fromBase58Address = hexToBase58Address(fromHexAddress)
     const contractBase58Address = hexToBase58Address(contractHexAddress)
     const toBase58Address = hexToBase58Address(toHexAddress)

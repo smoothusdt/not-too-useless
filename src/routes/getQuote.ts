@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox'
 import { app } from '../app'
 import { calculateQuote } from '../network'
-import { globalPino } from '../constants'
+import { AnanasFeeCollector, globalPino } from '../constants'
 
 const schema = {
     body: Type.Object({
@@ -22,6 +22,7 @@ app.post('/get-quote', { schema }, async function (request, reply) {
 
     const quote = await calculateQuote(to, pino)
     reply.send({
-        feeInUSDT: quote.totalFeeUSDT
+        feeRecipient: AnanasFeeCollector,
+        feeInUSDT: quote.totalFeeUSDT,
     })
 })

@@ -7,7 +7,7 @@ export const tronWeb = new TronWeb({
     headers: { "TRON-PRO-API-KEY": 'a40790e5-a3f3-4cbe-9362-055eaf5d594d' } as any,
 
     // MUST have TRX to buy energy 
-    privateKey: 'be5baf1bc2fb3a5f0a1dfa2194c5925e9313b350c6426846952543bbc40f94e1'
+    privateKey: process.env.ENERGY_BUYER_PRIVATE_KEY
 })
 
 export const USDTAddressBase58 = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
