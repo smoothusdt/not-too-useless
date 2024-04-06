@@ -24,7 +24,7 @@ export const UsdtToHolderEnergy = 31895
 export const UsdtPerTrx = BigNumber(0.12)
 
 // TRX needed for bandwidth of a single transaction
-export const TrxSingleTxBandwidth = new BigNumber(0.4)
+export const TrxSingleTxBandwidth = new BigNumber(0.345)
 
 export const AnanasFeeUSDT = new BigNumber(0.2)
 export const AnanasFeeCollector = 'TQyMmeSrADWyxZsV6YvVu6XDV8hdq72ykb'
