@@ -14,6 +14,7 @@ const schema = {
 
 app.post('/execute', { schema }, async function (request, reply) {
     const pino = globalPino.child({ requestId: crypto.randomUUID() })
+    const requestBeginTs = Date.now()
     pino.info({
         msg: "Got a new request!",
         url: request.url,
@@ -60,6 +61,7 @@ app.post('/execute', { schema }, async function (request, reply) {
 
     const {
         totalFeeUSDT,
+        sumEmergencyTrxNeeded,
         energyToBuy,
         sunToSpendForEnergy,
         trxNeeded,
@@ -79,9 +81,21 @@ app.post('/execute', { schema }, async function (request, reply) {
     // Fund the account with the resources. It's important to send TRX first because
     // if the account is not activated, we need to pay a 1 TRX activation fee.
     await sendTrx(trxNeeded, senderBase58Address, pino)
-    await buyEnergy(energyToBuy, sunToSpendForEnergy, senderBase58Address, rawTGQuote, pino)
 
-    // Execute the transactions
+    try {
+        await buyEnergy(energyToBuy, sunToSpendForEnergy, senderBase58Address, rawTGQuote, pino)
+    } catch {
+        // This is very bad, but reliability is very important.
+        // So in case we can't execute the transfer the normal way - send TRX to the user
+        // and pay the normal transfer fee.
+        await sendTrx(sumEmergencyTrxNeeded, senderBase58Address, pino)
+    }
+
+    // Wait to make sure energy and TRX arrive
+    // It can probably happen that tokengoodies has a delay in paying out the energy
+    // and I have no idea how to handle these situations.
+    await new Promise(resolve => setTimeout(resolve, 20000))
+
     await broadcastTx(decodedFeeTx, feeTx.signature, pino)
     pino.info({ msg: "Successfully executed the fee transaction!" })
 
@@ -90,6 +104,11 @@ app.post('/execute', { schema }, async function (request, reply) {
 
     reply.code(200).send({
         success: true,
-        mainTxID: decodedMainTx.txID
+        mainTxID: decodedMainTx.txID,
+    })
+
+    pino.info({
+        msg: "Execution took",
+        timeMs: Date.now() - requestBeginTs,
     })
 })

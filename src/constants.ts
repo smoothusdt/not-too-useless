@@ -20,8 +20,11 @@ export const TRXDecimals = 6
 export const UsdtToEmptyAccoutEnergy = 64895
 export const UsdtToHolderEnergy = 31895
 
+export const EmergencyTrxToEmptyAccount = BigNumber(27.2559)
+export const EmergencyTrxToHolder = BigNumber(13.3959)
+
 // Not critical, but need to update this via some pricing API
-export const UsdtPerTrx = BigNumber(0.128)
+export const UsdtPerTrx = BigNumber(0.12)
 
 // TRX needed for bandwidth of a single transaction
 export const TrxSingleTxBandwidth = new BigNumber(0.345)

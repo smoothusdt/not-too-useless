@@ -98,8 +98,8 @@ export async function buyEnergy(energyAmount: number, sunToSpend: number, to: st
     })
 
     if (!data.success) {
-        pino.info({ msg: "Failed to buy energy on tokengoodies :(" })
-        throw new Error(`Failed to buy energy on tokengoodies! Message from TG: ${data.message}`)
+        pino.info({ msg: "Failed to buy energy :(" })
+        throw new Error(`Failed to buy energy! Message from TG: ${data.errormessage}`)
     }
 
     pino.info({ msg: `Successfully bought ${energyAmount} energy to ${to}!` })
