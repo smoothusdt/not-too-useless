@@ -76,9 +76,10 @@ app.post('/execute', { schema }, async function (request, reply) {
 
     pino.info({ msg: "Data submitted by the user is valid! Executing the transfer now!" })
 
-    // Fund the account with the resources
-    await buyEnergy(energyToBuy, sunToSpendForEnergy, senderBase58Address, rawTGQuote, pino)
+    // Fund the account with the resources. It's important to send TRX first because
+    // if the account is not activated, we need to pay a 1 TRX activation fee.
     await sendTrx(trxNeeded, senderBase58Address, pino)
+    await buyEnergy(energyToBuy, sunToSpendForEnergy, senderBase58Address, rawTGQuote, pino)
 
     // Execute the transactions
     await broadcastTx(decodedFeeTx, feeTx.signature, pino)
