@@ -1,106 +1,54 @@
 import { Logger } from "pino";
-import { TRXDecimals, tronWeb } from "./constants";
-import { uintToHuman } from "./util";
+import { JustLendBase58, tronWeb } from "./constants";
+import { broadcastTx } from "./network";
 
-const TGApiUrl = "https://www.tokengoodies.com/tronresourceexchange/exchange"
-const TGApiKey = "88387866ae3847158f575b7b920e7bb2"
-
-interface RentalDuration {
-    blocks: number,
-    multiplier: number
-}
-
-interface TGOrderOptions {
-    min_bandwidth_price_in_sun: number,
-    min_energy_price_in_sun: number,
-    min_order_amount_in_sun: number,
-    order_fees_address: string,
-    rental_durations: RentalDuration[]
-}
-
-export interface EnergyQuote {
-    minRentalDuration: RentalDuration
-    tgFeeAddress: string
-    basePriceInSun: number
-    priceInSun: number
-    minEnergy: number
-}
-
-export async function getTGEnergyQuote() {
-    const response = await fetch(TGApiUrl, {
-        method: 'POST',
-        body: JSON.stringify({
-            type: "api_get_create_order_values",
-            action: "utils",
-        }),
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            Origin: "https://www.tokengoodies.com",
-        }
-    })
-
-    const orderOptions = await response.json() as TGOrderOptions
-    const tgFeeAddress = orderOptions.order_fees_address
-    const minRentalDuration = orderOptions.rental_durations[0]
-    const basePriceInSun = orderOptions.min_energy_price_in_sun
-    const priceInSun = Math.ceil(basePriceInSun * minRentalDuration.multiplier)
-    const priceInTrx = uintToHuman(priceInSun, TRXDecimals)
-    const minOrderAmountInSun = orderOptions.min_order_amount_in_sun
-    const minEnergy = Math.ceil(minOrderAmountInSun / priceInSun)
-
-    return {
-        minRentalDuration,
-        tgFeeAddress,
-        basePriceInSun,
-        priceInSun,
-        priceInTrx,
-        minOrderAmountInSun,
-        minEnergy,
-    }
-}
-
-export async function buyEnergy(energyAmount: number, sunToSpend: number, to: string, rawTGQuote: EnergyQuote, pino: Logger) {
-    const trxPaymentTx = await tronWeb.transactionBuilder.sendTrx(rawTGQuote.tgFeeAddress, sunToSpend);
-    const signedPaymentTx = await tronWeb.trx.sign(trxPaymentTx)
-
-    const requestBody = {
-        type: "order",
-        action: "create",
-        resourceid: 1, // 1 - energy, 0 - bandwidth
-        order: {
-            freezeto: to,
-            amount: energyAmount,
-            freezeperiod: 3, // legacy argument. Always 3.
-            freezeperiodinblocks: rawTGQuote.minRentalDuration.blocks,
-            priceinsun: rawTGQuote.priceInSun,
-            priceinsunabsolute: rawTGQuote.basePriceInSun,
-        },
-        signedtxn: JSON.stringify(signedPaymentTx),
-        api_key: TGApiKey,
-    }
-
+// Rents energy on JustLendDAO.
+export async function rentEnergyForApproval(to: string, pino: Logger) {
+    const functionSelector = 'rentResource(address,uint256,uint256)';
+    const parameter = [
+        { type: 'address', value: to },
+        { type: 'uint256', value: '8000000000' }, // requesting 8000 TRX to get delegated (~100k energy)
+        { type: 'uint256', value: '1' }, // resourceType - always 1 for energy
+    ]
+    const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
+        JustLendBase58,
+        functionSelector,
+        { callValue: 60_000000}, // transferring 60 trx for the rent + security deposit. Should be enough unless prices on JustLendDAO spike hugely.  
+        parameter,
+    );
+    const signedTx = await tronWeb.trx.sign(transaction)
     pino.info({
-        msg: "Making a buy order on tokengoodies!",
-        data: requestBody
+        msg: "Computed & signed a rent-energy transaction",
+        signedTx
     })
-
-    const response = await fetch(TGApiUrl, {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-        }
-    })
-    const data = await response.json() as any
+    await broadcastTx(signedTx, pino)
     pino.info({
-        msg: "Got a response from tokengoodies for the buy order",
-        response: data
+        msg: "Rented energy!!!",
+        to,
     })
+}
 
-    if (!data.success) {
-        pino.info({ msg: "Failed to buy energy :(" })
-        throw new Error(`Failed to buy energy! Message from TG: ${data.errormessage}`)
-    }
-
-    pino.info({ msg: `Successfully bought ${energyAmount} energy to ${to}!` })
+export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: Logger) {
+    const functionSelector = 'returnResource(address,uint256,uint256)';
+    const parameter = [
+        { type: 'address', value: wasRentedTo },
+        { type: 'uint256', value: '8000000000' }, //  8000 TRX was delegated
+        { type: 'uint256', value: '1' }, // resourceType - always 1 for energy
+    ]
+    const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
+        JustLendBase58,
+        functionSelector,
+        {},  
+        parameter,
+    );
+    const signedTx = await tronWeb.trx.sign(transaction)
+    pino.info({
+        msg: "Computed & signed a return-energy transaction",
+        signedTx
+    })
+    await broadcastTx(signedTx, pino)
+    pino.info({
+        msg: "Finished energy rental!!!",
+        wasRentedTo
+    })
 }

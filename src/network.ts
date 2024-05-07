@@ -1,72 +1,9 @@
 import { BigNumber } from "tronweb"
-import { AnanasFeeUSDT, EmergencyTrxToEmptyAccount, EmergencyTrxToHolder, TRXDecimals, TrxSingleTxBandwidth, USDTContract, USDTDecimals, UsdtPerTrx, UsdtToEmptyAccoutEnergy, UsdtToHolderEnergy, tronWeb } from "./constants"
+import { AdminBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb } from "./constants"
 import { DecodedUsdtTx } from "./encoding"
 import { humanToUint } from "./util"
 import { Logger } from "pino"
-import { getTGEnergyQuote } from "./energy"
 
-export async function calculateQuote(recipient: string, pino: Logger) {
-    const tgQuote = await getTGEnergyQuote()
-
-    let mainTransferEnergy: number
-    let mainTransferEmergencyTrx: BigNumber
-    const recipientUsdtBalance: BigNumber = await getUsdtBalance(recipient, pino)
-    if (recipientUsdtBalance.eq(0)) {
-        mainTransferEnergy = UsdtToEmptyAccoutEnergy
-        mainTransferEmergencyTrx = EmergencyTrxToEmptyAccount
-    } else {
-        mainTransferEnergy = UsdtToHolderEnergy
-        mainTransferEmergencyTrx = EmergencyTrxToHolder
-    }
-
-    // The fee collector surely has some USDT already
-    const feeTransferEnergy = UsdtToHolderEnergy
-    const feeTransferEmergencyTrx = EmergencyTrxToHolder
-
-    const sumEnergyNeeded = mainTransferEnergy + feeTransferEnergy
-    const sumEmergencyTrxNeeded = mainTransferEmergencyTrx.plus(feeTransferEmergencyTrx)
-    const energyToBuy = Math.max(sumEnergyNeeded, tgQuote.minEnergy)
-
-    const trxForEnergy = BigNumber(energyToBuy).multipliedBy(tgQuote.priceInTrx)
-    const sunToSpendForEnergy = humanToUint(trxForEnergy, USDTDecimals)
-    const usdtForEnergy = trxForEnergy.multipliedBy(UsdtPerTrx)
-
-    const trxForBandwidth = TrxSingleTxBandwidth.multipliedBy(2)
-    const usdtForBandwidth = trxForBandwidth.multipliedBy(UsdtPerTrx)
-
-    const networkFeeUSDT = usdtForEnergy.plus(usdtForBandwidth)
-    const feeWithMarkup = networkFeeUSDT.plus(AnanasFeeUSDT)
-
-    const quote = {
-        totalFeeUSDT: feeWithMarkup,
-        sumEnergyNeeded,
-        sumEmergencyTrxNeeded,
-        energyToBuy,
-        sunToSpendForEnergy,
-        trxNeeded: trxForBandwidth,
-        rawTGQuote: tgQuote,
-    }
-    pino.info({
-        msg: "Calculated a quote!",
-        quote,
-        quoteDetails: {
-            mainTransferEnergy,
-            feeTransferEnergy,
-            trxForEnergy,
-            usdtForEnergy,
-            trxForBandwidth,
-            usdtForBandwidth,
-            networkFeeUSDT,
-            feeWithMarkup,
-            sumEnergyNeeded,
-            mainTransferEmergencyTrx,
-            feeTransferEmergencyTrx,
-        }
-    })
-
-
-    return quote
-}
 
 /**
  * Fetches USDT balance for the given address and returns it in a human-readable format
@@ -113,19 +50,14 @@ export async function getTxExecutionResult(txID: string, pino: Logger): Promise<
     return executionResult;
 }
 
-export async function broadcastTx(decodedTx: DecodedUsdtTx, signature: string, pino: Logger) {
-    const fullSendData = {
-        visible: false, // false = hex (not base58) addresses are used
-        txID: decodedTx.txID,
-        raw_data: decodedTx.rawData,
-        raw_data_hex: decodedTx.rawDataHex,
-        signature: [signature],
-    }
+// Broadcasts a transaction and waits for its execution.
+// Throws an error if transaction fails.
+export async function broadcastTx(signedTx: any, pino: Logger) {
     pino.info({
         msg: "Broadcasting transaction!",
-        fullSendData
+        signedTx
     })
-    const broadcastResult = await tronWeb.trx.sendRawTransaction(fullSendData)
+    const broadcastResult = await tronWeb.trx.sendRawTransaction(signedTx)
     if (!broadcastResult.result) {
         pino.error({
             msg: "Could not send the transaction!!",
@@ -167,4 +99,47 @@ export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger) 
     pino.info({ msg: `Initiated a transfer of ${amountHuman} TRX to ${to}` })
     await getTxExecutionResult(result.transaction.txID, pino)
     pino.info({ msg: "TRX transfer has succeeded"})
+}
+
+// Throws, logs, and notifies the devs via TBD if the admin wallet doesn't have enough energy.
+// This is extremly bad if happens as it breaks the core functionality!!
+export async function checkAdminEnergy(pino: Logger) {
+    pino.info({
+        msg: "Checking how much energy admin has"
+    })
+
+    const adminResources = await tronWeb.trx.getAccountResources(AdminBase58Address)
+    pino.info({
+        msg: "Fetched admin resources",
+        adminResources,
+    })
+
+    let energyBalance: number = 0;
+    if (!adminResources.EnergyLimit) {
+        energyBalance = 0
+    } else {
+        const energyUsed = adminResources.EnergyUsed || 0 // can be undefined if zero
+        energyBalance = adminResources.EnergyLimit - energyUsed
+    }
+
+    pino.info({
+        msg: "Admin's energy balance",
+        energyBalance
+    })
+
+    if (energyBalance < MinAdminEnergy) {
+        // Suuuuuuuuuuuuuuper bad
+        const msg = "The admin wallet does not have enough energy to relay a transfer!!!!!!!!!!!!!!"
+        pino.error({
+            msg
+        })
+
+        // TODO: important. Also notify via a discord / telegram bot or a service like that
+
+        throw new Error(msg)
+    }
+
+    pino.info({
+        msg: "Admin's energy is sufficient! Great!"
+    })
 }

@@ -20,9 +20,10 @@ export interface DecodedUsdtTx {
     contractHexAddress: string,
     contractBase58Address: string,
 
-    toHexAddress: string,
-    toBase58Address: string,
+    spenderHexAddress: string,
+    spenderBase58Address: string,
 
+    amountHex: Hex
     amountUint: BigNumber,
     amountHuman: BigNumber
 
@@ -30,7 +31,7 @@ export interface DecodedUsdtTx {
     signerBase58Address: string,
 }
 
-export function decodeUsdtTransaction({ rawDataHex, signature }: { rawDataHex: Hex, signature: string }): DecodedUsdtTx {
+export function decodeApprovalTransaction({ rawDataHex, signature }: { rawDataHex: Hex, signature: string }): DecodedUsdtTx {
     const rawDataBytes = hexToBytes(rawDataHex)
     const decodedRawData = Raw.decode(rawDataBytes) as any
     const txID = sha256(rawDataBytes)
@@ -54,33 +55,34 @@ export function decodeUsdtTransaction({ rawDataHex, signature }: { rawDataHex: H
 
     // Calldata explanation:
     // 4 bytes - function selector
-    // 32 bytes - first argument (to address)
-    // 32 bytes - second argument (value uint256)
+    // 32 bytes - first argument (spender address)
+    // 32 bytes - second argument (approvalAmount uint256)
     const calldata = sliceHex(contractData, 48)
     assert(size(calldata) === 68)
  
-    // 0xa9059cbb is the "transfer" function signature
-    assert(sliceHex(calldata, 0, 4) === '0xa9059cbb')
+    // 0x095ea7b3 is the "approve" function signature
+    assert(sliceHex(calldata, 0, 4) === '0x095ea7b3')
 
     const arg0 = sliceHex(calldata, 4, 36)
     const arg1 = sliceHex(calldata, 36)
 
-    let toHexAddress: string = sliceHex(arg0, 11)
+    let spenderHexAddress: string = sliceHex(arg0, 11)
+    const amountHex = arg1
     const amountUint = BigNumber(arg1)
     const amountHuman = amountUint.dividedBy(BigNumber(10).pow(USDTDecimals))
 
     // remove 0x prefix. Addresses on tron must start with "41"
     fromHexAddress = fromHexAddress.slice(2)
     contractHexAddress = contractHexAddress.slice(2)
-    toHexAddress = toHexAddress.slice(2)
+    spenderHexAddress = spenderHexAddress.slice(2)
 
     // for some reason, `to` address is decoded with '00' at the beginning
     // instead of '41'. Fixing it here.
-    toHexAddress = '41' + toHexAddress.slice(2)
+    spenderHexAddress = '41' + spenderHexAddress.slice(2)
 
     const fromBase58Address = hexToBase58Address(fromHexAddress)
     const contractBase58Address = hexToBase58Address(contractHexAddress)
-    const toBase58Address = hexToBase58Address(toHexAddress)
+    const spenderBase58Address = hexToBase58Address(spenderHexAddress)
 
     const rawDataFormatted = {
         contract: [{
@@ -114,9 +116,10 @@ export function decodeUsdtTransaction({ rawDataHex, signature }: { rawDataHex: H
         contractHexAddress,
         contractBase58Address,
 
-        toHexAddress,
-        toBase58Address,
+        spenderHexAddress,
+        spenderBase58Address,
 
+        amountHex,
         amountUint,
         amountHuman,
 

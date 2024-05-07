@@ -1,3 +1,2 @@
-import './example'
-import './getQuote'
-import './execute'
+import './transfer'
+import './approve'
