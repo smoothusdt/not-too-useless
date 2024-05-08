@@ -1,4 +1,4 @@
-import { BigNumber } from "tronweb"
+import { BigNumber, TronWeb } from "tronweb"
 import { AdminBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb } from "./constants"
 import { DecodedUsdtTx } from "./encoding"
 import { humanToUint } from "./util"
@@ -10,6 +10,10 @@ import { Logger } from "pino"
  * @param address 
  */
 export async function getUsdtBalance(address: string, pino: Logger): Promise<BigNumber> {
+    pino.info({
+        msg: "Fetching USDT balance",
+        address
+    })
     let balanceUint: BigNumber = await USDTContract.methods.balanceOf(address).call()
     balanceUint = BigNumber(balanceUint.toString()) // for some reason we need an explicit conversion
 
@@ -22,32 +26,28 @@ export async function getUsdtBalance(address: string, pino: Logger): Promise<Big
     return balanceHuman
 }
 
-export async function getTxExecutionResult(txID: string, pino: Logger): Promise<any> {
+export async function getTxReceipt(txID: string, pino: Logger): Promise<any> {
     const startTs = Date.now()
     const timeout = 60000 // should never fucking timeout
-    let executionResult;
-    while (!executionResult) {
+    while (true) {
         pino.info({
-            msg: "Checking transaction execution result",
+            msg: "Checking transaction receipt",
             txID,
         })
-        try {
-            executionResult = await tronWeb.trx.getTransaction(txID)
-        } catch (error: any) {
-            if (Date.now() - startTs > timeout) {
-                pino.error({
-                    msg: "This is critical. We don't know anything about the transaction execution result even after an entire minute!!!",
-                    txID: txID,
-                })
-                throw new Error('Did not find transaction execution result')
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 3000))
-            continue // means the transaction has not been included yet
+        const txInfo = await tronWeb.trx.getUnconfirmedTransactionInfo(txID)
+        pino.info({
+            msg: "Fetched transaction info",
+            txID,
+            txInfo,
+        })
+        if (txInfo && txInfo.id) {
+            return txInfo
         }
+        if (Date.now() - startTs > timeout) {
+            throw new Error('Could not get the transaction receipt after a long time! This is extremly bad!!!!')
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000))
     }
-
-    return executionResult;
 }
 
 // Broadcasts a transaction and waits for its execution.
@@ -67,19 +67,20 @@ export async function broadcastTx(signedTx: any, pino: Logger) {
         throw new Error(`Could not send the transaction due to ${broadcastResult.message}`)
     }
 
-    const executionResult = await getTxExecutionResult(broadcastResult.transaction.txID, pino)
-    const contractRet = (executionResult as any).ret[0].contractRet
-    if (contractRet === "SUCCESS") {
+    const txReceipt = await getTxReceipt(broadcastResult.transaction.txID, pino)
+    // If txReceipt.receipt.result is not defined - it is a TRX transfer.
+    // We always consider it successful.
+    if (!txReceipt.receipt || !txReceipt.receipt.result || txReceipt.receipt.result === 'SUCCESS') {
         pino.info({
             msg: "Transaction has been successfully executed!",
             txID: broadcastResult.transaction.txID,
+            executionResult: txReceipt.receipt.result,
         })
         return
     } else {
         pino.error({
             msg: "Transaction did not execute well!!",
-            executionResult,
-            contractRet,
+            txReceipt,
         })
         throw new Error(`Failed to execute transaction ${broadcastResult.transaction.txID}`)
     }
@@ -97,7 +98,7 @@ export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger) 
         throw new Error('Could not send TRX')
     }
     pino.info({ msg: `Initiated a transfer of ${amountHuman} TRX to ${to}` })
-    await getTxExecutionResult(result.transaction.txID, pino)
+    await getTxReceipt(result.transaction.txID, pino)
     pino.info({ msg: "TRX transfer has succeeded"})
 }
 
@@ -129,7 +130,7 @@ export async function checkAdminEnergy(pino: Logger) {
 
     if (energyBalance < MinAdminEnergy) {
         // Suuuuuuuuuuuuuuper bad
-        const msg = "The admin wallet does not have enough energy to relay a transfer!!!!!!!!!!!!!!"
+        const msg = "The admin wallet does not have enough energy!!!!!!!!!!!!!!"
         pino.error({
             msg
         })

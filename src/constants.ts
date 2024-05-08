@@ -17,22 +17,9 @@ export const USDTHexAddress = '41a614f803b6fd780986a42c78ec9c7f77e6ded13c'
 export const USDTDecimals = 6
 export const USDTContract = tronWeb.contract(USDTAbi, USDTAddressBase58)
 export const TRXDecimals = 6
-export const MinAdminEnergy = 150_000 // Admin must always have at least this amount of energy
+export const MinAdminEnergy = 1 // 150_000 // Admin must always have at least this amount of energy
 
-// Need to fetch from chain bcs these may change when the load is high
-export const UsdtToEmptyAccoutEnergy = 64895
-export const UsdtToHolderEnergy = 31895
-
-export const EmergencyTrxToEmptyAccount = BigNumber(27.2559)
-export const EmergencyTrxToHolder = BigNumber(13.3959)
-
-// Not critical, but need to update this via some pricing API
-export const UsdtPerTrx = BigNumber(0.12)
-
-// TRX needed for bandwidth of a single transaction
-export const TrxSingleTxBandwidth = new BigNumber(0.345)
-
-export const AnanasFeeUSDT = new BigNumber(0.2)
+export const SmoothTransferFee = new BigNumber('1.5') // How much USDT users pay for each transfer
 export const AnanasFeeCollector = 'TQyMmeSrADWyxZsV6YvVu6XDV8hdq72ykb'
 export const SmoothRouterBase58 = 'TLhQFYzLC783A3cFAStUBNUufGy1xf1hrd' // Should be the latest router version, but maybe it's not hahaha :)
 

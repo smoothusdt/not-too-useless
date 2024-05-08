@@ -13,7 +13,7 @@ export async function rentEnergyForApproval(to: string, pino: Logger) {
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
         JustLendBase58,
         functionSelector,
-        { callValue: 60_000000}, // transferring 60 trx for the rent + security deposit. Should be enough unless prices on JustLendDAO spike hugely.  
+        { callValue: 60_000000 }, // transferring 60 trx for the rent + security deposit. Should be enough unless prices on JustLendDAO spike hugely.  
         parameter,
     );
     const signedTx = await tronWeb.trx.sign(transaction)

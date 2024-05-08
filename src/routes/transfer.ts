@@ -31,6 +31,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
     await checkAdminEnergy(pino)
 
     // TODO: check that feeAmount is valid, that the user has enough USDT, that the user has approved our router to spend USDT and maybe some other stuff.
+    // if (forma)
 
     const functionSelector = 'transfer(address,address,uint256,uint256,uint256,uint8,bytes32,bytes32)';
     const parameter = [
