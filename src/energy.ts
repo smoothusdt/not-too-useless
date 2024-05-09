@@ -1,5 +1,5 @@
 import { Logger } from "pino";
-import { JustLendBase58, tronWeb } from "./constants";
+import { DelegateTrxForApproval, JustLendBase58, tronWeb } from "./constants";
 import { broadcastTx } from "./network";
 
 // Rents energy on JustLendDAO.
@@ -7,7 +7,7 @@ export async function rentEnergyForApproval(to: string, pino: Logger) {
     const functionSelector = 'rentResource(address,uint256,uint256)';
     const parameter = [
         { type: 'address', value: to },
-        { type: 'uint256', value: '8000000000' }, // requesting 8000 TRX to get delegated (~100k energy)
+        { type: 'uint256', value: DelegateTrxForApproval }, // requesting some TRX to get delegated (~100k energy)
         { type: 'uint256', value: '1' }, // resourceType - always 1 for energy
     ]
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
@@ -32,7 +32,7 @@ export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: L
     const functionSelector = 'returnResource(address,uint256,uint256)';
     const parameter = [
         { type: 'address', value: wasRentedTo },
-        { type: 'uint256', value: '8000000000' }, //  8000 TRX was delegated
+        { type: 'uint256', value: DelegateTrxForApproval }, // return the delegated TRX
         { type: 'uint256', value: '1' }, // resourceType - always 1 for energy
     ]
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(

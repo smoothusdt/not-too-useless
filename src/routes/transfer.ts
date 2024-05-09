@@ -6,10 +6,12 @@ import { uintToHuman } from '../util';
 
 const schema = {
     body: Type.Object({
+        usdtAddress: Type.String(), // base58
         from: Type.String(),
         to: Type.String(),
         transferAmount: Type.Number(), // uint
         feeAmount: Type.Number(), // uint
+        feeCollector: Type.String(), // Base58 fee collector address
         nonce: Type.Number(),
         v: Type.Number(),
         r: Type.String(), // Hex
@@ -46,11 +48,13 @@ app.post('/transfer', { schema }, async function (request, reply) {
         })
     }
 
-    const functionSelector = 'transfer(address,address,uint256,uint256,uint256,uint8,bytes32,bytes32)';
+    const functionSelector = 'transfer(address,address,address,uint256,address,uint256,uint256,uint8,bytes32,bytes32)';
     const parameter = [
+        { type: 'address', value: body.usdtAddress },
         { type: 'address', value: body.from },
         { type: 'address', value: body.to },
         { type: 'uint256', value: body.transferAmount },
+        { type: 'address', value: body.feeCollector },
         { type: 'uint256', value: body.feeAmount },
         { type: 'uint256', value: body.nonce },
         { type: 'uint8', value: body.v },

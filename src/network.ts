@@ -1,5 +1,5 @@
 import { BigNumber, TronWeb } from "tronweb"
-import { AdminBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb } from "./constants"
+import { RelayerBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb } from "./constants"
 import { DecodedUsdtTx } from "./encoding"
 import { humanToUint } from "./util"
 import { Logger } from "pino"
@@ -109,7 +109,7 @@ export async function checkAdminEnergy(pino: Logger) {
         msg: "Checking how much energy admin has"
     })
 
-    const adminResources = await tronWeb.trx.getAccountResources(AdminBase58Address)
+    const adminResources = await tronWeb.trx.getAccountResources(RelayerBase58Address)
     pino.info({
         msg: "Fetched admin resources",
         adminResources,
