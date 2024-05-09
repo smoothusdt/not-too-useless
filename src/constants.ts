@@ -17,11 +17,11 @@ export const USDTHexAddress = '41a614f803b6fd780986a42c78ec9c7f77e6ded13c'
 export const USDTDecimals = 6
 export const USDTContract = tronWeb.contract(USDTAbi, USDTAddressBase58)
 export const TRXDecimals = 6
-export const MinAdminEnergy = 1 // 150_000 // Admin must always have at least this amount of energy
+export const MinAdminEnergy = 130_000 // Admin must always have at least this amount of energy
 
 export const SmoothTransferFee = new BigNumber('1.5') // How much USDT users pay for each transfer
-export const AnanasFeeCollector = 'TQyMmeSrADWyxZsV6YvVu6XDV8hdq72ykb'
-export const SmoothRouterBase58 = 'TLhQFYzLC783A3cFAStUBNUufGy1xf1hrd' // Should be the latest router version, but maybe it's not hahaha :)
+export const SmoothFeeCollector = 'TQyMmeSrADWyxZsV6YvVu6XDV8hdq72ykb'
+export const SmoothRouterBase58 = 'TLhQFYzLC783A3cFAStUBNUufGy1xf1hrd'
 
 export const JustLendBase58 = 'TU2MJ5Veik1LRAgjeSzEdvmDYx7mefJZvd'
 

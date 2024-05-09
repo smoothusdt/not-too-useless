@@ -1,7 +1,8 @@
 import { Type } from '@sinclair/typebox'
 import { app } from "../app";
-import { SmoothRouterBase58, globalPino, tronWeb } from '../constants';
+import { SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
 import { checkAdminEnergy } from '../network';
+import { uintToHuman } from '../util';
 
 const schema = {
     body: Type.Object({
@@ -30,8 +31,20 @@ app.post('/transfer', { schema }, async function (request, reply) {
     // end up running out of energy.
     await checkAdminEnergy(pino)
 
-    // TODO: check that feeAmount is valid, that the user has enough USDT, that the user has approved our router to spend USDT and maybe some other stuff.
-    // if (forma)
+    // TODO: check that the user has enough USDT, that the user has approved our router to spend USDT, that the nonce is correct, the signature and maybe some other stuff.
+    const humanFee = uintToHuman(body.feeAmount, USDTDecimals)
+    if (!humanFee.eq(SmoothTransferFee)) {
+        pino.warn({
+            msg: "The fee in the transfer was incorrect!",
+            submittedUintFee: body.feeAmount,
+            submittedHumanFee: humanFee,
+            requiredHumanFee: SmoothTransferFee,
+        })
+        return reply.code(429).send({
+            success: false,
+            error: `The fee must be exactly ${SmoothTransferFee} USDT`
+        })
+    }
 
     const functionSelector = 'transfer(address,address,uint256,uint256,uint256,uint8,bytes32,bytes32)';
     const parameter = [
