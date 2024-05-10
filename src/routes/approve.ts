@@ -23,13 +23,6 @@ app.post('/approve', { schema }, async function (request, reply) {
     })
     const body = request.body
 
-    // TODO: need to have a global mutex for the admin wallet so that we don't accidentally
-    // end up running out of energy when executing multiple transactions in parallel.
-    await checkAdminEnergy(pino)
-
-    pino.info({
-        msg: "Admin's energy is sufficient! Decoding the approval tx now."
-    })
     const decodedApproveTx = decodeApprovalTransaction({
         rawDataHex: body.approveTx.rawDataHex as Hex,
         signature: body.approveTx.signature,
@@ -74,28 +67,13 @@ app.post('/approve', { schema }, async function (request, reply) {
     }
 
     pino.info({
-        msg: "The approval transaction is valid! Checking the user's USDT balance now."
-    })
-
-    const userUsdtBalance = await getUsdtBalance(decodedApproveTx.fromBase58Address, pino)
-    if (userUsdtBalance.lt(SmoothTransferFee)) {
-        pino.warn({
-            msg: 'User USDT balance is too low',
-            userUsdtBalance,
-            requiredBalance: SmoothTransferFee
-        })
-        return reply.code(429).send({
-            success: false,
-            error: `The user must have at least ${SmoothTransferFee} USDT to execute approval`
-        })
-    }
-    pino.info({
-        msg: "The user has enough USDT! Executing the approval flow now!"
+        msg: "The approval transaction is valid!"
     })
 
     // TODO: check the user's bandwidth and account activation status before sending TRX.
-    // If the has not been activated yet - we just need to make an empty transaction, without any TRX.
+    // If the account has not been activated yet - we just need to make an empty transaction, without any TRX.
     // If the account has enough bandwidth - we don't need this transaction at all.
+    // TODO: Can also optimize this by bundling TRX send and energy rental into a single transaction.
     await sendTrx(BigNumber('0.35'), decodedApproveTx.fromBase58Address, pino)
     pino.info({
         msg: "Sent 0.35 trx to the user to pay for bandwidth and active the account."
@@ -118,18 +96,21 @@ app.post('/approve', { schema }, async function (request, reply) {
         msg: "Successfully executed the approval transaction!"
     })
 
-    await finishEnergyRentalForApproval(decodedApproveTx.fromBase58Address, pino)
-    pino.info({
-        msg: "Finished energy rental after executing approval"
-    })
-
+    // The approval has been executed, so we can safely reply. We can finish energy rental later
     reply.send({
         success: true,
         txID: decodedApproveTx.txID,
     })
 
+    // Logging now instead of the very end because we want to know for how long the user had to wait,
+    // not how much time it took to execute everything.
     pino.info({
         msg: "Execution took",
         timeMs: Date.now() - requestBeginTs,
+    })
+
+    await finishEnergyRentalForApproval(decodedApproveTx.fromBase58Address, pino)
+    pino.info({
+        msg: "Finished energy rental after executing approval"
     })
 })

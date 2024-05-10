@@ -1,6 +1,5 @@
 import { BigNumber, TronWeb } from "tronweb"
-import { RelayerBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb } from "./constants"
-import { DecodedUsdtTx } from "./encoding"
+import { RelayerBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb, SmoothRouterBase58, SmoothRouterContract } from "./constants"
 import { humanToUint } from "./util"
 import { Logger } from "pino"
 

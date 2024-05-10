@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox'
 import { app } from "../app";
 import { SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
-import { checkAdminEnergy } from '../network';
+import { checkAdminEnergy, getUsdtBalance } from '../network';
 import { uintToHuman } from '../util';
 
 const schema = {
@@ -29,11 +29,6 @@ app.post('/transfer', { schema }, async function (request, reply) {
     })
     const body = request.body
 
-    // TODO: need to have a global mutex for the admin wallet so that we don't accidentally
-    // end up running out of energy.
-    await checkAdminEnergy(pino)
-
-    // TODO: check that the user has enough USDT, that the user has approved our router to spend USDT, that the nonce is correct, the signature and maybe some other stuff.
     const humanFee = uintToHuman(body.feeAmount, USDTDecimals)
     if (!humanFee.eq(SmoothTransferFee)) {
         pino.warn({

@@ -74,7 +74,7 @@ async function main() {
 
     console.log('Calling the api!')
     const startTs = Date.now()
-    const response = await fetch('http://localhost:3000/transfer', {
+    const response = await fetch('http://api.smoothusdt.com/transfer', {
         method: 'POST',
         body: JSON.stringify({
             usdtAddress,
