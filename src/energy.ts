@@ -3,7 +3,7 @@ import { DelegateTrxForApproval, JustLendBase58, tronWeb } from "./constants";
 import { broadcastTx } from "./network";
 
 // Rents energy on JustLendDAO.
-export async function rentEnergyForApproval(to: string, pino: Logger) {
+export async function rentEnergyForApproval(to: string, pino: Logger): Promise<string> {
     const functionSelector = 'rentResource(address,uint256,uint256)';
     const parameter = [
         { type: 'address', value: to },
@@ -26,9 +26,11 @@ export async function rentEnergyForApproval(to: string, pino: Logger) {
         msg: "Rented energy!!!",
         to,
     })
+
+    return signedTx.txID
 }
 
-export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: Logger) {
+export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: Logger): Promise<string> {
     const functionSelector = 'returnResource(address,uint256,uint256)';
     const parameter = [
         { type: 'address', value: wasRentedTo },
@@ -51,4 +53,6 @@ export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: L
         msg: "Finished energy rental!!!",
         wasRentedTo
     })
+
+    return signedTx.txID
 }

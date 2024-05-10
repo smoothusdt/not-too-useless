@@ -7,6 +7,7 @@ interface NetworkConfigInterface {
     routerBase58: string
     relayerMinEnergy: number
     delegateTrxForApproval: number
+    explorerUrl: string
 }
 
 const MainnetConfig: NetworkConfigInterface = {
@@ -17,7 +18,8 @@ const MainnetConfig: NetworkConfigInterface = {
     justLendBase58: 'TU2MJ5Veik1LRAgjeSzEdvmDYx7mefJZvd',
     routerBase58: '', // TODO: deploy the updated version
     relayerMinEnergy: 150_000,
-    delegateTrxForApproval: 8000_000000
+    delegateTrxForApproval: 8000_000000,
+    explorerUrl: 'https://tronscan.org/#'
 }
 
 const ShastaConfig: NetworkConfigInterface = {
@@ -28,7 +30,8 @@ const ShastaConfig: NetworkConfigInterface = {
     justLendBase58: 'TQgSxmKZBP2e1vs9PrgiLFUcrd2wGXPEA9',
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
     relayerMinEnergy: 0,
-    delegateTrxForApproval: 1000_000000
+    delegateTrxForApproval: 1000_000000,
+    explorerUrl: 'https://shasta.tronscan.org/#'
 }
 
 export let NetworkConfig: NetworkConfigInterface

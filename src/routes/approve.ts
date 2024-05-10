@@ -1,11 +1,12 @@
 import { Type } from '@sinclair/typebox'
 import { app } from "../app";
-import { SmoothRouterBase58, SmoothTransferFee, USDTAddressBase58, globalPino, tronWeb } from '../constants';
-import { broadcastTx, checkAdminEnergy, getUsdtBalance, sendTrx } from '../network';
+import { ExplorerUrl, SmoothRouterBase58, USDTAddressBase58, globalPino } from '../constants';
+import { broadcastTx, sendTrx } from '../network';
 import { finishEnergyRentalForApproval, rentEnergyForApproval } from '../energy';
 import { decodeApprovalTransaction } from '../encoding';
 import { Hex } from 'viem';
 import { BigNumber } from 'tronweb';
+import { sendTgNotification } from '../telegram';
 
 const schema = {
     body: Type.Object({
@@ -74,12 +75,12 @@ app.post('/approve', { schema }, async function (request, reply) {
     // If the account has not been activated yet - we just need to make an empty transaction, without any TRX.
     // If the account has enough bandwidth - we don't need this transaction at all.
     // TODO: Can also optimize this by bundling TRX send and energy rental into a single transaction.
-    await sendTrx(BigNumber('0.35'), decodedApproveTx.fromBase58Address, pino)
+    const trxTxID = await sendTrx(BigNumber('0.35'), decodedApproveTx.fromBase58Address, pino)
     pino.info({
         msg: "Sent 0.35 trx to the user to pay for bandwidth and active the account."
     })
 
-    await rentEnergyForApproval(decodedApproveTx.fromBase58Address, pino)
+    const rentEnergyTxID = await rentEnergyForApproval(decodedApproveTx.fromBase58Address, pino)
     pino.info({
         msg: "Rented energy on JustLendDAO for the approval transaction!"
     })
@@ -109,8 +110,15 @@ app.post('/approve', { schema }, async function (request, reply) {
         timeMs: Date.now() - requestBeginTs,
     })
 
-    await finishEnergyRentalForApproval(decodedApproveTx.fromBase58Address, pino)
+    const returnEnergyTxID = await finishEnergyRentalForApproval(decodedApproveTx.fromBase58Address, pino)
     pino.info({
         msg: "Finished energy rental after executing approval"
     })
+
+    const message = `Executed an approval\\!
+1\\. [Send TRX Tx](${ExplorerUrl}/transaction/${trxTxID})
+2\\. [Rent Energy Tx](${ExplorerUrl}/transaction/${rentEnergyTxID})
+3\\. [Actual Approve Tx](${ExplorerUrl}/transaction/${decodedApproveTx.txID})
+4\\. [Return Energy Tx](${ExplorerUrl}/transaction/${returnEnergyTxID})`
+    await sendTgNotification(message, pino)
 })

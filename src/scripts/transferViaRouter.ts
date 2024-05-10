@@ -52,7 +52,7 @@ async function main() {
     const transferAmount = BigNumber('3')
     const feeCollector = SmoothFeeCollector
     const feeAmount = BigNumber('1.5')
-    const nonce = 0
+    const nonce = 4
 
     const signature = await signTransferMessage(
         BigInt(ChainID),
@@ -74,7 +74,7 @@ async function main() {
 
     console.log('Calling the api!')
     const startTs = Date.now()
-    const response = await fetch('http://api.smoothusdt.com/transfer', {
+    const response = await fetch('http://localhost:3000/transfer', {
         method: 'POST',
         body: JSON.stringify({
             usdtAddress,

@@ -1,8 +1,8 @@
 import { Type } from '@sinclair/typebox'
 import { app } from "../app";
-import { SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
-import { checkAdminEnergy, getUsdtBalance } from '../network';
+import { ChainName, EnvironmentName, ExplorerUrl, SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
 import { uintToHuman } from '../util';
+import { sendTgNotification } from '../telegram';
 
 const schema = {
     body: Type.Object({
@@ -85,4 +85,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
         msg: "Execution took",
         timeMs: Date.now() - requestBeginTs,
     })
+
+    const explorerUrl = `${ExplorerUrl}/transaction/${broadcastResult.transaction.txID}`
+    await sendTgNotification(`Executed a transfer\\! [Transaction](${explorerUrl})`, pino)
 })

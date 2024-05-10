@@ -85,7 +85,7 @@ export async function broadcastTx(signedTx: any, pino: Logger) {
     }
 }
 
-export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger) {
+export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger): Promise<string> {
     const amountUint = humanToUint(amountHuman, TRXDecimals)
     const result = await tronWeb.trx.sendTrx(to, amountUint)
     if (!result.result) {
@@ -98,7 +98,9 @@ export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger) 
     }
     pino.info({ msg: `Initiated a transfer of ${amountHuman} TRX to ${to}` })
     await getTxReceipt(result.transaction.txID, pino)
-    pino.info({ msg: "TRX transfer has succeeded"})
+    pino.info({ msg: "TRX transfer has succeeded" })
+    
+    return result.transaction.txID
 }
 
 // Throws, logs, and notifies the devs via TBD if the admin wallet doesn't have enough energy.
