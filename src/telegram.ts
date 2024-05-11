@@ -10,7 +10,7 @@ export const BotUrl = 'https://api.telegram.org/bot' + TG_BOT_TOKEN
 const NotificationsChatId = -4249996549
 
 export async function sendTgNotification(message: string, pino: Logger) {
-    message = `On ${ChainName}, ${EnvironmentName}\\.\n` + message
+    message = `On ${ChainName}, ${EnvironmentName}.\n` + message
     pino.info({
         msg: 'Sending a telegram notification',
         message
@@ -21,7 +21,7 @@ export async function sendTgNotification(message: string, pino: Logger) {
         body: JSON.stringify({
             chat_id: NotificationsChatId,
             text: message,
-            parse_mode: 'MarkdownV2',
+            parse_mode: 'HTML',
             link_preview_options: {
                 is_disabled: true
             }

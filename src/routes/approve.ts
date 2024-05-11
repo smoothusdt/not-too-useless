@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox'
 import { app } from "../app";
 import { ExplorerUrl, SmoothRouterBase58, USDTAddressBase58, globalPino } from '../constants';
-import { broadcastTx, sendTrx } from '../network';
+import { broadcastTx, logRelayerState, sendTrx } from '../network';
 import { finishEnergyRentalForApproval, rentEnergyForApproval } from '../energy';
 import { decodeApprovalTransaction } from '../encoding';
 import { Hex } from 'viem';
@@ -115,10 +115,11 @@ app.post('/approve', { schema }, async function (request, reply) {
         msg: "Finished energy rental after executing approval"
     })
 
-    const message = `Executed an approval\\!
-1\\. [Send TRX Tx](${ExplorerUrl}/transaction/${trxTxID})
-2\\. [Rent Energy Tx](${ExplorerUrl}/transaction/${rentEnergyTxID})
-3\\. [Actual Approve Tx](${ExplorerUrl}/transaction/${decodedApproveTx.txID})
-4\\. [Return Energy Tx](${ExplorerUrl}/transaction/${returnEnergyTxID})`
+    const message = `Executed an approval!
+1. <a href="${ExplorerUrl}/transaction/${trxTxID}">Send TRX Tx</a>
+2. <a href="${ExplorerUrl}/transaction/${rentEnergyTxID}">Rent Energy Tx</a>
+3. <a href="${ExplorerUrl}/transaction/${decodedApproveTx.txID}">Actual Approve Tx</a>
+4. <a href="${ExplorerUrl}/transaction/${returnEnergyTxID}">Return Energy Tx</a>`
     await sendTgNotification(message, pino)
+    await logRelayerState(pino)
 })

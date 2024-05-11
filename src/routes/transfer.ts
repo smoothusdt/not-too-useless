@@ -3,6 +3,7 @@ import { app } from "../app";
 import { ChainName, EnvironmentName, ExplorerUrl, SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
 import { uintToHuman } from '../util';
 import { sendTgNotification } from '../telegram';
+import { logRelayerState } from '../network';
 
 const schema = {
     body: Type.Object({
@@ -87,5 +88,6 @@ app.post('/transfer', { schema }, async function (request, reply) {
     })
 
     const explorerUrl = `${ExplorerUrl}/transaction/${broadcastResult.transaction.txID}`
-    await sendTgNotification(`Executed a transfer\\! [Transaction](${explorerUrl})`, pino)
+    await sendTgNotification(`Executed a transfer! <a href="${explorerUrl}">Transaction</a>`, pino)
+    await logRelayerState(pino)
 })
