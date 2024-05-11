@@ -107,9 +107,10 @@ app.post('/approve', { schema }, async function (request, reply) {
 
     // Logging now instead of the very end because we want to know for how long the user had to wait,
     // not how much time it took to execute everything.
+    const executionTook = Date.now() - requestBeginTs
     pino.info({
         msg: "Execution took",
-        timeMs: Date.now() - requestBeginTs,
+        timeMs: executionTook,
     })
 
     const returnEnergyTxID = await finishEnergyRentalForApproval(decodedApproveTx.fromBase58Address, pino)
@@ -117,8 +118,8 @@ app.post('/approve', { schema }, async function (request, reply) {
         msg: "Finished energy rental after executing approval"
     })
 
-    const location = await getLocationByIp(request.ip)
-    const message = `Executed an approval! From ${request.ip}, ${location}.
+    const location = await getLocationByIp((request.headers['true-client-ip'] as string) || request.ip)
+    const message = `Executed an approval! From ${request.ip}, ${location}. It took ${executionTook} ms to reply.
 1. <a href="${ExplorerUrl}/transaction/${trxTxID}">Send TRX Tx</a>
 2. <a href="${ExplorerUrl}/transaction/${rentEnergyTxID}">Rent Energy Tx</a>
 3. <a href="${ExplorerUrl}/transaction/${decodedApproveTx.txID}">Actual Approve Tx</a>
