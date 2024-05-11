@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox'
 import { app } from "../app";
 import { ChainName, EnvironmentName, ExplorerUrl, SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
 import { uintToHuman } from '../util';
-import { sendTgNotification } from '../telegram';
+import { getLocationByIp, sendTgNotification } from '../telegram';
 import { logRelayerState } from '../network';
 
 const schema = {
@@ -26,7 +26,9 @@ app.post('/transfer', { schema }, async function (request, reply) {
     pino.info({
         msg: "Got a new request!",
         url: request.url,
-        requestBody: request.body
+        requestBody: request.body,
+        headers: request.headers,
+        ip: request.ip
     })
     const body = request.body
 
@@ -44,6 +46,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
         })
     }
 
+    const beforeCreateTransactionTs = Date.now()
     const functionSelector = 'transfer(address,address,address,uint256,address,uint256,uint256,uint8,bytes32,bytes32)';
     const parameter = [
         { type: 'address', value: body.usdtAddress },
@@ -58,12 +61,15 @@ app.post('/transfer', { schema }, async function (request, reply) {
         { type: 'bytes32', value: body.s },
     ]
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(SmoothRouterBase58, functionSelector, {}, parameter);
+    const beforeSignTransactionTs = Date.now()
     const signedTx = await tronWeb.trx.sign(transaction)
     pino.info({
         msg: "Computed & signed a transfer transaction",
         signedTx
     })
 
+
+    const beforeBroadcastTransactionTs = Date.now()
     const broadcastResult = await tronWeb.trx.sendRawTransaction(signedTx)
     if (!broadcastResult.result) {
         pino.error({
@@ -77,6 +83,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
         msg: "Successfully broadcasted the transfer transaction"
     })
 
+    const beforeReplyTs = Date.now()
     reply.send({
         success: true,
         txID: broadcastResult.transaction.txID
@@ -85,9 +92,15 @@ app.post('/transfer', { schema }, async function (request, reply) {
     pino.info({
         msg: "Execution took",
         timeMs: Date.now() - requestBeginTs,
+        requestBeginTs,
+        beforeCreateTransactionTs,
+        beforeSignTransactionTs,
+        beforeBroadcastTransactionTs,
+        beforeReplyTs
     })
 
     const explorerUrl = `${ExplorerUrl}/transaction/${broadcastResult.transaction.txID}`
-    await sendTgNotification(`Executed a transfer! <a href="${explorerUrl}">Transaction</a>`, pino)
+    const location = await getLocationByIp(request.ip)
+    await sendTgNotification(`Executed a transfer! From ${request.ip}, ${location}. <a href="${explorerUrl}">Transaction</a>.`, pino)
     await logRelayerState(pino)
 })

@@ -6,7 +6,7 @@ import { finishEnergyRentalForApproval, rentEnergyForApproval } from '../energy'
 import { decodeApprovalTransaction } from '../encoding';
 import { Hex } from 'viem';
 import { BigNumber } from 'tronweb';
-import { sendTgNotification } from '../telegram';
+import { getLocationByIp, sendTgNotification } from '../telegram';
 
 const schema = {
     body: Type.Object({
@@ -20,7 +20,9 @@ app.post('/approve', { schema }, async function (request, reply) {
     pino.info({
         msg: "Got a new request!",
         url: request.url,
-        requestBody: request.body
+        requestBody: request.body,
+        headers: request.headers,
+        ip: request.ip
     })
     const body = request.body
 
@@ -115,7 +117,8 @@ app.post('/approve', { schema }, async function (request, reply) {
         msg: "Finished energy rental after executing approval"
     })
 
-    const message = `Executed an approval!
+    const location = await getLocationByIp(request.ip)
+    const message = `Executed an approval! From ${request.ip}, ${location}.
 1. <a href="${ExplorerUrl}/transaction/${trxTxID}">Send TRX Tx</a>
 2. <a href="${ExplorerUrl}/transaction/${rentEnergyTxID}">Rent Energy Tx</a>
 3. <a href="${ExplorerUrl}/transaction/${decodedApproveTx.txID}">Actual Approve Tx</a>

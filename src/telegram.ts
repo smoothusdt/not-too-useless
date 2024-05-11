@@ -44,3 +44,15 @@ export async function sendTgNotification(message: string, pino: Logger) {
         throw new Error('Failed to send a telegram notification!')
     }
 }
+
+export async function getLocationByIp(ip: string): Promise<string> {
+    try {
+        const response = await fetch(`http://ip-api.com/json/${ip}`)
+        const result = await response.json() as any
+        const location = `${result.country}, ${result.regionName}`
+        return location
+    } catch {
+        // we don't care about what error happened since this is just informational
+        return undefined
+    }
+}
