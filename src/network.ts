@@ -3,7 +3,8 @@ import { RelayerBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDe
 import { humanToUint, uintToHuman } from "./util"
 import { Logger } from "pino"
 import { produceError, sendTelegramNotification } from "./notifications"
-import { Block } from "./tronWebTypes/APIResponse"
+import { Block, BlockHeader } from "./tronWebTypes/APIResponse"
+import { Transaction } from "./tronWebTypes/Transaction"
 
 
 /**
@@ -94,7 +95,16 @@ export async function broadcastTx(signedTx: any, pino: Logger) {
 
 export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger): Promise<string> {
     const amountUint = humanToUint(amountHuman, TRXDecimals)
-    const result = await tronWeb.trx.sendTrx(to, amountUint)
+    const startTs = Date.now()
+    const transaction = await tronWeb.transactionBuilder.sendTrx(to, amountUint, RelayerBase58Address, {
+        blockHeader: await makeBlockHeader(pino)
+    })
+    pino.info({
+        msg: 'Time to build a send trx tx',
+        time: Date.now() - startTs
+    })
+    const signedTx = await tronWeb.trx.sign(transaction)
+    const result = await tronWeb.trx.sendRawTransaction(signedTx)
     if (!result.result) {
         await produceError(
             'Could not send TRX',
@@ -176,4 +186,21 @@ export async function updateLatestConfirmedBlockLoop(pino: Logger) {
         }
         await new Promise(resolve => setTimeout(resolve, interval))
     }
+}
+
+export async function makeBlockHeader(pino: Logger): Promise<Partial<Transaction['raw_data']>> {
+    const block = await getLatestConfirmedBlock(pino)
+    const timestamp = Date.now()
+    const expiration = timestamp + 60000 // expires in 1 minute
+    const blockHeader = {
+        ref_block_bytes: block.blockID.slice(6 * 2, 8 * 2),
+        ref_block_hash: block.blockID.slice(8 * 2, 16 * 2),
+        timestamp,
+        expiration
+    }
+    pino.info({
+        msg: 'Made a block header',
+        blockHeader
+    })
+    return blockHeader
 }

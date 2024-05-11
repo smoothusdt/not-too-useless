@@ -12,7 +12,8 @@ const tronWeb = new TronWeb({
 }) 
 
 async function main() {
-    console.log('Signing approval transaction')
+    const host = 'localhost:3000'
+    console.log('Signing approval transaction', host)
 
     const functionSelector = 'approve(address,uint256)';
     const parameter = [
@@ -31,7 +32,7 @@ async function main() {
 
     console.log('Sending the approval tx to the api')
     const startTs = Date.now()
-    const response = await fetch('http://api.smoothusdt.com/approve', {
+    const response = await fetch(`http://${host}/approve`, {
         method: 'POST',
         body: JSON.stringify({
             approveTx: {

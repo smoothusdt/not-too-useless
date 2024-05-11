@@ -1,6 +1,6 @@
 import { Logger } from "pino";
 import { DelegateTrxForApproval, JustLendBase58, tronWeb } from "./constants";
-import { broadcastTx } from "./network";
+import { broadcastTx, makeBlockHeader } from "./network";
 
 // Rents energy on JustLendDAO.
 export async function rentEnergyForApproval(to: string, pino: Logger): Promise<string> {
@@ -10,12 +10,21 @@ export async function rentEnergyForApproval(to: string, pino: Logger): Promise<s
         { type: 'uint256', value: DelegateTrxForApproval }, // requesting some TRX to get delegated (~100k energy)
         { type: 'uint256', value: '1' }, // resourceType - always 1 for energy
     ]
+    const startTs = Date.now()
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
         JustLendBase58,
         functionSelector,
-        { callValue: 60_000000 }, // transferring 60 trx for the rent + security deposit. Should be enough unless prices on JustLendDAO spike hugely.  
+        {
+            callValue: 60_000000, // transferring 60 trx for the rent + security deposit.Should be enough unless prices on JustLendDAO spike hugely.
+            blockHeader: await makeBlockHeader(pino),
+            txLocal: true
+        },
         parameter,
     );
+    pino.info({
+        msg: 'Time to build a rent energy tx',
+        time: Date.now() - startTs
+    })
     const signedTx = await tronWeb.trx.sign(transaction)
     pino.info({
         msg: "Computed & signed a rent-energy transaction",
@@ -37,12 +46,20 @@ export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: L
         { type: 'uint256', value: DelegateTrxForApproval }, // return the delegated TRX
         { type: 'uint256', value: '1' }, // resourceType - always 1 for energy
     ]
+    const startTs = Date.now()
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
         JustLendBase58,
         functionSelector,
-        {},  
+        {
+            blockHeader: await makeBlockHeader(pino),
+            txLocal: true
+        },  
         parameter,
     );
+    pino.info({
+        msg: 'Time to build a finish rental tx',
+        time: Date.now() - startTs
+    })
     const signedTx = await tronWeb.trx.sign(transaction)
     pino.info({
         msg: "Computed & signed a return-energy transaction",

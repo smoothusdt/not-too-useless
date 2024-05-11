@@ -3,7 +3,7 @@ import { app } from "../app";
 import { ChainName, EnvironmentName, ExplorerUrl, SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
 import { uintToHuman } from '../util';
 import { getLocationByIp, produceError, sendTelegramNotification } from '../notifications';
-import { getLatestConfirmedBlock, logRelayerState } from '../network';
+import { getLatestConfirmedBlock, logRelayerState, makeBlockHeader } from '../network';
 
 const schema = {
     body: Type.Object({
@@ -60,20 +60,12 @@ app.post('/transfer', { schema }, async function (request, reply) {
         { type: 'bytes32', value: body.r },
         { type: 'bytes32', value: body.s },
     ]
-    const latestConfirmedBlock = await getLatestConfirmedBlock(pino)
     const beforeCreateTransactionTs = Date.now()
-    const timestamp = Date.now()
-    const expiration = timestamp + 60000 // expires in 1 minute
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
         SmoothRouterBase58,
         functionSelector,
         {
-            blockHeader: {
-                ref_block_bytes: latestConfirmedBlock.blockID.slice(6 * 2, 8 * 2),
-                ref_block_hash: latestConfirmedBlock.blockID.slice(8 * 2, 16 * 2),
-                timestamp,
-                expiration,
-            },
+            blockHeader: await makeBlockHeader(pino),
             txLocal: true
         },
         parameter,
