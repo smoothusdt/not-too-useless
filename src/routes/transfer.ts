@@ -2,8 +2,8 @@ import { Type } from '@sinclair/typebox'
 import { app } from "../app";
 import { ChainName, EnvironmentName, ExplorerUrl, SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
 import { uintToHuman } from '../util';
-import { getLocationByIp, sendTgNotification } from '../telegram';
-import { logRelayerState } from '../network';
+import { getLocationByIp, produceError, sendTelegramNotification } from '../notifications';
+import { getLatestConfirmedBlock, logRelayerState } from '../network';
 
 const schema = {
     body: Type.Object({
@@ -46,7 +46,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
         })
     }
 
-    const beforeCreateTransactionTs = Date.now()
+    const beforeGetBlock = Date.now()
     const functionSelector = 'transfer(address,address,address,uint256,address,uint256,uint256,uint8,bytes32,bytes32)';
     const parameter = [
         { type: 'address', value: body.usdtAddress },
@@ -60,7 +60,24 @@ app.post('/transfer', { schema }, async function (request, reply) {
         { type: 'bytes32', value: body.r },
         { type: 'bytes32', value: body.s },
     ]
-    const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(SmoothRouterBase58, functionSelector, {}, parameter);
+    const latestConfirmedBlock = await getLatestConfirmedBlock(pino)
+    const beforeCreateTransactionTs = Date.now()
+    const timestamp = Date.now()
+    const expiration = timestamp + 60000 // expires in 1 minute
+    const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
+        SmoothRouterBase58,
+        functionSelector,
+        {
+            blockHeader: {
+                ref_block_bytes: latestConfirmedBlock.blockID.slice(6 * 2, 8 * 2),
+                ref_block_hash: latestConfirmedBlock.blockID.slice(8 * 2, 16 * 2),
+                timestamp,
+                expiration,
+            },
+            txLocal: true
+        },
+        parameter,
+    );
     const beforeSignTransactionTs = Date.now()
     const signedTx = await tronWeb.trx.sign(transaction)
     pino.info({
@@ -68,16 +85,19 @@ app.post('/transfer', { schema }, async function (request, reply) {
         signedTx
     })
 
-
     const beforeBroadcastTransactionTs = Date.now()
     const broadcastResult = await tronWeb.trx.sendRawTransaction(signedTx)
     if (!broadcastResult.result) {
-        pino.error({
-            msg: "Could not send the transaction!!",
-            code: broadcastResult.code,
-            message: broadcastResult.message,
-        })
-        throw new Error(`Could not send the transaction due to ${broadcastResult.message}`)
+        await produceError(
+            `Could not send the transaction due to ${broadcastResult.message}`,
+            // Not logging the transaction object since it will take a lot of space and
+            // has been logged a few lines above anyway.
+            {
+                code: broadcastResult.code,
+                message: broadcastResult.message,
+            },
+            pino
+        )
     }
     pino.info({
         msg: "Successfully broadcasted the transfer transaction"
@@ -93,6 +113,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
         msg: "Execution took",
         timeMs: Date.now() - requestBeginTs,
         requestBeginTs,
+        beforeGetBlock,
         beforeCreateTransactionTs,
         beforeSignTransactionTs,
         beforeBroadcastTransactionTs,
@@ -101,6 +122,6 @@ app.post('/transfer', { schema }, async function (request, reply) {
 
     const explorerUrl = `${ExplorerUrl}/transaction/${broadcastResult.transaction.txID}`
     const location = await getLocationByIp(request.ip)
-    await sendTgNotification(`Executed a transfer! From ${request.ip}, ${location}. <a href="${explorerUrl}">Transaction</a>.`, pino)
+    await sendTelegramNotification(`Executed a transfer! From ${request.ip}, ${location}. <a href="${explorerUrl}">Transaction</a>.`, pino)
     await logRelayerState(pino)
 })

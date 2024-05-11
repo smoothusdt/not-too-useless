@@ -6,7 +6,7 @@ import { finishEnergyRentalForApproval, rentEnergyForApproval } from '../energy'
 import { decodeApprovalTransaction } from '../encoding';
 import { Hex } from 'viem';
 import { BigNumber } from 'tronweb';
-import { getLocationByIp, sendTgNotification } from '../telegram';
+import { getLocationByIp, sendTelegramNotification } from '../notifications';
 
 const schema = {
     body: Type.Object({
@@ -123,6 +123,6 @@ app.post('/approve', { schema }, async function (request, reply) {
 2. <a href="${ExplorerUrl}/transaction/${rentEnergyTxID}">Rent Energy Tx</a>
 3. <a href="${ExplorerUrl}/transaction/${decodedApproveTx.txID}">Actual Approve Tx</a>
 4. <a href="${ExplorerUrl}/transaction/${returnEnergyTxID}">Return Energy Tx</a>`
-    await sendTgNotification(message, pino)
+    await sendTelegramNotification(message, pino)
     await logRelayerState(pino)
 })

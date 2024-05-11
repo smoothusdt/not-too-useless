@@ -1,8 +1,9 @@
 import { BigNumber, TronWeb } from "tronweb"
-import { RelayerBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb, SmoothRouterBase58, SmoothRouterContract, SmoothFeeCollector } from "./constants"
+import { RelayerBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb } from "./constants"
 import { humanToUint, uintToHuman } from "./util"
 import { Logger } from "pino"
-import { sendTgNotification } from "./telegram"
+import { produceError, sendTelegramNotification } from "./notifications"
+import { Block } from "./tronWebTypes/APIResponse"
 
 
 /**
@@ -29,14 +30,14 @@ export async function getUsdtBalance(address: string, pino: Logger): Promise<Big
 export async function getTxReceipt(txID: string, pino: Logger): Promise<any> {
     const startTs = Date.now()
     const timeout = 60000 // should never fucking timeout
+    pino.info({
+        msg: "Fetching transaction receipt",
+        txID,
+    })
     while (true) {
-        pino.info({
-            msg: "Checking transaction receipt",
-            txID,
-        })
         const txInfo = await tronWeb.trx.getUnconfirmedTransactionInfo(txID)
         pino.info({
-            msg: "Fetched transaction info",
+            msg: "Fetched transaction info. Checking whether it's non-empty",
             txID,
             txInfo,
         })
@@ -44,7 +45,7 @@ export async function getTxReceipt(txID: string, pino: Logger): Promise<any> {
             return txInfo
         }
         if (Date.now() - startTs > timeout) {
-            throw new Error('Could not get the transaction receipt after a long time! This is extremly bad!!!!')
+            await produceError('Could not get the transaction receipt after a long time! This is extremly bad!!!!', { txID }, pino)
         }
         await new Promise(resolve => setTimeout(resolve, 1000))
     }
@@ -59,12 +60,14 @@ export async function broadcastTx(signedTx: any, pino: Logger) {
     })
     const broadcastResult = await tronWeb.trx.sendRawTransaction(signedTx)
     if (!broadcastResult.result) {
-        pino.error({
-            msg: "Could not send the transaction!!",
-            code: broadcastResult.code,
-            message: broadcastResult.message,
-        })
-        throw new Error(`Could not send the transaction due to ${broadcastResult.message}`)
+        await produceError(
+            `Could not send the transaction due to ${broadcastResult.message}`,
+            {
+                code: broadcastResult.code,
+                message: broadcastResult.message
+            },
+            pino,
+        )
     }
 
     const txReceipt = await getTxReceipt(broadcastResult.transaction.txID, pino)
@@ -78,11 +81,14 @@ export async function broadcastTx(signedTx: any, pino: Logger) {
         })
         return
     } else {
-        pino.error({
-            msg: "Transaction did not execute well!!",
-            txReceipt,
-        })
-        throw new Error(`Failed to execute transaction ${broadcastResult.transaction.txID}`)
+        await produceError(
+            'Transaction did not execute well!!',
+            {
+                txReceipt,
+                txID: broadcastResult.transaction.txID
+            },
+            pino
+        )
     }
 }
 
@@ -90,61 +96,22 @@ export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger):
     const amountUint = humanToUint(amountHuman, TRXDecimals)
     const result = await tronWeb.trx.sendTrx(to, amountUint)
     if (!result.result) {
-        pino.error({
-            msg: "Could not send the transaction!",
-            code: result.code,
-            message: result.message,
-        })
-        throw new Error('Could not send TRX')
+        await produceError(
+            'Could not send TRX',
+            {
+                code: result.code,
+                message: result.message,
+                amountHuman,
+                to
+            },
+            pino
+        )
     }
     pino.info({ msg: `Initiated a transfer of ${amountHuman} TRX to ${to}` })
     await getTxReceipt(result.transaction.txID, pino)
     pino.info({ msg: "TRX transfer has succeeded" })
     
     return result.transaction.txID
-}
-
-// Throws, logs, and notifies the devs via TBD if the admin wallet doesn't have enough energy.
-// This is extremly bad if happens as it breaks the core functionality!!
-export async function checkAdminEnergy(pino: Logger) {
-    pino.info({
-        msg: "Checking how much energy admin has"
-    })
-
-    const adminResources = await tronWeb.trx.getAccountResources(RelayerBase58Address)
-    pino.info({
-        msg: "Fetched admin resources",
-        adminResources,
-    })
-
-    let energyBalance: number = 0;
-    if (!adminResources.EnergyLimit) {
-        energyBalance = 0
-    } else {
-        const energyUsed = adminResources.EnergyUsed || 0 // can be undefined if zero
-        energyBalance = adminResources.EnergyLimit - energyUsed
-    }
-
-    pino.info({
-        msg: "Admin's energy balance",
-        energyBalance
-    })
-
-    if (energyBalance < MinAdminEnergy) {
-        // Suuuuuuuuuuuuuuper bad
-        const msg = "The admin wallet does not have enough energy!!!!!!!!!!!!!!"
-        pino.error({
-            msg
-        })
-
-        // TODO: important. Also notify via a discord / telegram bot or a service like that
-
-        throw new Error(msg)
-    }
-
-    pino.info({
-        msg: "Admin's energy is sufficient! Great!"
-    })
 }
 
 // A function that can be fired from anywhere at any time to log
@@ -171,11 +138,42 @@ export async function logRelayerState(pino: Logger) {
 Relayer's energy: ${relayerEenergyUsed} / ${relayerEnergyLimit} (${energyPercentageUsed}%) is used. ${relayerEnergyBalance} energy is available.
 Relayer's balance: ${relayerTrxBalance} TRX.`
     
-    await sendTgNotification(message, pino)
+    await sendTelegramNotification(message, pino)
 }
 
-// const latestConfirmedBlock: Block
+let latestConfirmedBlock: Block
 
-export async function getLatestConfirmedBlockHash() {
+export async function getLatestConfirmedBlock(pino: Logger): Promise<Block> {
+    const maxLatestBlockAge = 3600 * 2 * 1000 // 2 hours (in milliseconds)
+    if (!latestConfirmedBlock || Date.now() - latestConfirmedBlock.block_header.raw_data.timestamp >  maxLatestBlockAge) {
+        const msg = 'Latest confirmed block was not up-to-date!'
+        pino.warn({
+            msg,
+        })
+        const telegramMessage = `Warning! ${msg}`
+        await sendTelegramNotification(telegramMessage, pino)
+        latestConfirmedBlock = await tronWeb.trx.getConfirmedCurrentBlock()
+    }
 
+    return latestConfirmedBlock
+}
+
+// An infinite loop that updates the latest confirmed block every hour.
+// In transactions, Tron allows to use reference block that is up to 2 days old,
+// but we are updating the latest confirmed block every hour just to be sure it's ok.
+export async function updateLatestConfirmedBlockLoop(pino: Logger) {
+    const interval = 3600 * 1000 // 1 hour (in milliseconds)
+    while (true) {
+        try {
+            latestConfirmedBlock = await tronWeb.trx.getConfirmedCurrentBlock()
+            pino.info({
+                msg: 'Updated latest confirmed block',
+                blockTimestamp: latestConfirmedBlock.block_header.raw_data.timestamp,
+                blockID: latestConfirmedBlock.blockID,
+            })
+        } catch (error: any) {
+            await produceError('Could not update latestConfirmedBlock!!!', { error }, pino)
+        }
+        await new Promise(resolve => setTimeout(resolve, interval))
+    }
 }

@@ -4,9 +4,13 @@ dotenv.config()
 
 import { app } from './app'
 import './routes'
+import { globalPino } from "./constants"
+import { updateLatestConfirmedBlockLoop } from "./network"
 
 const port = Number(process.env.PORT ?? '3000')
 const host = process.env.HOST ?? '0.0.0.0'
+
+updateLatestConfirmedBlockLoop(globalPino)
 
 // Run the server!
 app.listen({ port, host }, function (err) {

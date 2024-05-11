@@ -9,7 +9,7 @@ if (!TG_BOT_TOKEN) {
 export const BotUrl = 'https://api.telegram.org/bot' + TG_BOT_TOKEN
 const NotificationsChatId = -4249996549
 
-export async function sendTgNotification(message: string, pino: Logger) {
+export async function sendTelegramNotification(message: string, pino: Logger) {
     message = `On ${ChainName}, ${EnvironmentName}.\n` + message
     pino.info({
         msg: 'Sending a telegram notification',
@@ -55,4 +55,15 @@ export async function getLocationByIp(ip: string): Promise<string> {
         // we don't care about what error happened since this is just informational
         return undefined
     }
+}
+
+// Logs error, sends a telegram alert and throws
+export async function produceError(message: string, context: any, pino: Logger) {
+    pino.error({
+        msg: message,
+        context
+    })
+    const telegramMessage = `Alert!!! ${message}`
+    await sendTelegramNotification(telegramMessage, pino)
+    throw new Error(message)
 }
