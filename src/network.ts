@@ -173,3 +173,9 @@ Relayer's balance: ${relayerTrxBalance} TRX.`
     
     await sendTgNotification(message, pino)
 }
+
+// const latestConfirmedBlock: Block
+
+export async function getLatestConfirmedBlockHash() {
+
+}

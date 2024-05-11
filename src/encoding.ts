@@ -7,7 +7,7 @@ import { USDTDecimals } from "./constants"
 import { sha256 } from "js-sha256"
 
 const root = protobuf.loadSync('src/transaction.proto')
-const Raw = root.lookupType("Transaction.raw")
+export const Raw = root.lookupType("Transaction.raw")
 
 export interface DecodedUsdtTx {
     rawDataHex: string

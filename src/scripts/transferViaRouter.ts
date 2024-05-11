@@ -52,7 +52,7 @@ async function main() {
     const transferAmount = BigNumber('3')
     const feeCollector = SmoothFeeCollector
     const feeAmount = BigNumber('1.5')
-    const nonce = 4
+    const nonce = 8
 
     const signature = await signTransferMessage(
         BigInt(ChainID),
