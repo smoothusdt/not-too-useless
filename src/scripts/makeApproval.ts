@@ -31,7 +31,7 @@ async function main() {
 
     console.log('Sending the approval tx to the api')
     const startTs = Date.now()
-    const response = await fetch('http://localhost:3000/approve', {
+    const response = await fetch('http://api.smoothusdt.com/approve', {
         method: 'POST',
         body: JSON.stringify({
             approveTx: {

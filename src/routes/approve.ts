@@ -119,7 +119,7 @@ app.post('/approve', { schema }, async function (request, reply) {
     })
 
     const location = await getLocationByIp((request.headers['true-client-ip'] as string) || request.ip)
-    const message = `Executed an approval! From ${request.ip}, ${location}. It took ${executionTook} ms to reply.
+    const message = `Executed an approval! From ${request.ip}, ${location}. It took ${executionTook}ms to reply.
 1. <a href="${ExplorerUrl}/transaction/${trxTxID}">Send TRX Tx</a>
 2. <a href="${ExplorerUrl}/transaction/${rentEnergyTxID}">Rent Energy Tx</a>
 3. <a href="${ExplorerUrl}/transaction/${decodedApproveTx.txID}">Actual Approve Tx</a>

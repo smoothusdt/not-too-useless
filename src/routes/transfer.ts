@@ -109,9 +109,10 @@ app.post('/transfer', { schema }, async function (request, reply) {
         txID: broadcastResult.transaction.txID
     })
 
+    const executionTook = Date.now() - requestBeginTs
     pino.info({
         msg: "Execution took",
-        timeMs: Date.now() - requestBeginTs,
+        timeMs: executionTook,
         requestBeginTs,
         beforeGetBlock,
         beforeCreateTransactionTs,
@@ -122,6 +123,6 @@ app.post('/transfer', { schema }, async function (request, reply) {
 
     const explorerUrl = `${ExplorerUrl}/transaction/${broadcastResult.transaction.txID}`
     const location = await getLocationByIp((request.headers['true-client-ip'] as string) || request.ip)
-    await sendTelegramNotification(`Executed a transfer! From ${request.ip}, ${location}. <a href="${explorerUrl}">Transaction</a>.`, pino)
+    await sendTelegramNotification(`Executed a transfer! From ${request.ip}, ${location}. It took ${executionTook}ms to replyю <a href="${explorerUrl}">Transaction</a>.`, pino)
     await logRelayerState(pino)
 })
