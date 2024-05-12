@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox'
 import { app } from "../app";
 import { ChainName, EnvironmentName, ExplorerUrl, SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
 import { uintToHuman } from '../util';
-import { getLocationByIp, produceError, sendTelegramNotification } from '../notifications';
+import { formatTxMessage, getLocationByIp, produceError, sendTelegramNotification } from '../notifications';
 import { getLatestConfirmedBlock, logRelayerState, makeBlockHeader } from '../network';
 
 const schema = {
@@ -113,8 +113,10 @@ app.post('/transfer', { schema }, async function (request, reply) {
         beforeReplyTs
     })
 
-    const explorerUrl = `${ExplorerUrl}/transaction/${broadcastResult.transaction.txID}`
+    // Wait for 3 seconds so that the transaction is included in a block
+    await new Promise(resolve => setTimeout(resolve, 3000))
     const location = await getLocationByIp((request.headers['true-client-ip'] as string) || request.ip)
-    await sendTelegramNotification(`Executed a transfer! From ${request.ip}, ${location}. It took ${executionTook}ms to replyю <a href="${explorerUrl}">Transaction</a>.`, pino)
+    const txDetailsMessage = await formatTxMessage('Transfer', broadcastResult.transaction.txID, pino)
+    await sendTelegramNotification(`Executed a transfer! From ${request.ip}, ${location}. It took ${executionTook}ms to reply.\n${txDetailsMessage}`, pino)
     await logRelayerState(pino)
 })

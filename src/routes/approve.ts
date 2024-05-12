@@ -6,7 +6,7 @@ import { finishEnergyRentalForApproval, rentEnergyForApproval } from '../energy'
 import { decodeApprovalTransaction } from '../encoding';
 import { Hex } from 'viem';
 import { BigNumber } from 'tronweb';
-import { getLocationByIp, sendTelegramNotification } from '../notifications';
+import { formatTxMessage, getLocationByIp, sendTelegramNotification } from '../notifications';
 
 const schema = {
     body: Type.Object({
@@ -118,12 +118,15 @@ app.post('/approve', { schema }, async function (request, reply) {
         msg: "Finished energy rental after executing approval"
     })
 
+    // Wait for 3 seconds so that all transactions are included in a block
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    await new Promise(resolve => setTimeout(resolve, 3000))
     const location = await getLocationByIp((request.headers['true-client-ip'] as string) || request.ip)
     const message = `Executed an approval! From ${request.ip}, ${location}. It took ${executionTook}ms to reply.
-1. <a href="${ExplorerUrl}/transaction/${trxTxID}">Send TRX Tx</a>
-2. <a href="${ExplorerUrl}/transaction/${rentEnergyTxID}">Rent Energy Tx</a>
-3. <a href="${ExplorerUrl}/transaction/${decodedApproveTx.txID}">Actual Approve Tx</a>
-4. <a href="${ExplorerUrl}/transaction/${returnEnergyTxID}">Return Energy Tx</a>`
+1. ${await formatTxMessage('Send TRX', trxTxID, pino)}
+2. ${await formatTxMessage('Rent Energy', rentEnergyTxID, pino)}
+3. ${await formatTxMessage('Approve Router', decodedApproveTx.txID, pino)}
+4. ${await formatTxMessage('Return Energy', returnEnergyTxID, pino)}`
     await sendTelegramNotification(message, pino)
     await logRelayerState(pino)
 })

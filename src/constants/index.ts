@@ -17,13 +17,17 @@ if (!RelayerBase58Address) {
 console.log(`Set up the api with relayer wallet ${RelayerBase58Address} on chain ${NetworkConfig.chainName}`)
 
 // misc constants
-export const ChainID = NetworkConfig.chainId
-export const ChainName = NetworkConfig.chainName
-export const ExplorerUrl = NetworkConfig.explorerUrl
 export const EnvironmentName = process.env.ENVIRONMENT_NAME // 'Alexey Mac', 'Dillon Mac', 'Hosted Render', etc. Don't use characters that need to be escaped in telegram.
 if (!EnvironmentName) {
     throw new Error('ENVIRONMENT_NAME .env variable is not set')
 }
+export const TRXPrice = new BigNumber('0.12') // USD per TRX
+
+// chain constants
+export const ChainID = NetworkConfig.chainId
+export const ChainName = NetworkConfig.chainName
+export const ExplorerUrl = NetworkConfig.explorerUrl
+
 
 // tokens constants
 export const USDTAddressBase58 = NetworkConfig.usdtAddressBase58
@@ -40,6 +44,7 @@ export const SmoothRouterBase58 = NetworkConfig.routerBase58
 export const MinAdminEnergy = NetworkConfig.relayerMinEnergy // Relayer must always have at least this amount of energy
 export const DelegateTrxForApproval = NetworkConfig.delegateTrxForApproval
 export const JustLendBase58 = NetworkConfig.justLendBase58
+export const ApproximateRentalPrice = 65 // sun per energy unit
 
 export const globalPino = PinoConstrucor({
     level: "debug"
