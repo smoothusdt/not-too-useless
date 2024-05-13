@@ -51,6 +51,7 @@ export const StakedSunPerEnergyUint = new BigNumber('79260') // how much sun (1 
 export const JL_SCALE = new BigNumber(10).pow(18) // JL = JustLend.
 export const RentEnergyFor = new BigNumber(86400 * 7) // always have 1 week of rental reserved
 export const ExtendIfRemainsLessThan = new BigNumber(86400) // extend energy rental if there is less than 1 day until liquidation
+export const RelayerCheckLoopInterval = 3600 * 12 * 1000 // 12 hours in milliseconds. Must be less than ExtendIfRemainsLessThan so that we have some time to extend rent.
 export const MinRelayerEnergy = 180_000 // buy more energy if we run lower than this number
 
 export const globalPino = PinoConstrucor({

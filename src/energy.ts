@@ -1,5 +1,5 @@
 import { Logger } from "pino";
-import { DelegateTrxForApproval, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
+import { DelegateTrxForApproval, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
 import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
 import { uintToHuman } from "./util";
@@ -322,13 +322,12 @@ Will extend energy rental: ${willExtendRental}.`
 }
 
 export async function checkRelayerStateLoop(pino: Logger) {
-    const interval = 86400 * 1000 // 1 day (in milliseconds)
     while (true) {
         try {
             await checkRelayerState(pino)
         } catch (error: any) {
             await produceError('Could not check relayer status!!!', { error }, pino)
         }
-        await new Promise(resolve => setTimeout(resolve, interval))
+        await new Promise(resolve => setTimeout(resolve, RelayerCheckLoopInterval))
     }
 }
