@@ -42,7 +42,8 @@ async function signTransferMessage(
 }
 
 async function main() {
-    const host = 'localhost:3000'
+    // const host = 'localhost:3000'
+    const host = 'api.smoothusdt.com'
     console.log('Begin', host)
 
     const fromBase58 = tronWeb.address.fromPrivateKey(process.env.USER_PRIVATE_KEY) as string;
@@ -53,7 +54,7 @@ async function main() {
     const transferAmount = BigNumber('3')
     const feeCollector = SmoothFeeCollector
     const feeAmount = BigNumber('1.5')
-    const nonce = 16
+    const nonce = 17
 
     const signature = await signTransferMessage(
         BigInt(ChainID),

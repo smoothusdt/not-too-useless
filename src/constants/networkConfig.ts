@@ -7,6 +7,7 @@ interface NetworkConfigInterface {
     routerBase58: string
     relayerMinEnergy: number
     delegateTrxForApproval: number
+    paySunForApproval: number
     explorerUrl: string
 }
 
@@ -19,6 +20,7 @@ const MainnetConfig: NetworkConfigInterface = {
     routerBase58: '', // TODO: deploy the updated version
     relayerMinEnergy: 150_000,
     delegateTrxForApproval: 8000_000000,
+    paySunForApproval: 60_000000,
     explorerUrl: 'https://tronscan.org/#'
 }
 
@@ -31,6 +33,7 @@ const ShastaConfig: NetworkConfigInterface = {
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
     relayerMinEnergy: 0,
     delegateTrxForApproval: 1000_000000,
+    paySunForApproval: 10_000000,
     explorerUrl: 'https://shasta.tronscan.org/#'
 }
 

@@ -16,8 +16,11 @@ export async function getUsdtBalance(address: string, pino: Logger): Promise<Big
         msg: "Fetching USDT balance",
         address
     })
-    let balanceUint: BigNumber = await USDTContract.methods.balanceOf(address).call()
-    balanceUint = BigNumber(balanceUint.toString()) // for some reason we need an explicit conversion
+    let balanceUint = await USDTContract.methods.balanceOf(address).call()
+    // We need an epxlicit conversion because tronWeb is a peace of crap and
+    // contract calls return a BigNumber, but it's an ethers BigNumber,
+    // whereas we want a TronWeb's BigNumber.
+    balanceUint = BigNumber(balanceUint.toString())
 
     const balanceHuman: BigNumber = balanceUint.dividedBy(BigNumber(10).pow(USDTDecimals))
     pino.info({
@@ -81,16 +84,17 @@ export async function broadcastTx(signedTx: any, pino: Logger) {
             executionResult: txReceipt.receipt.result,
         })
         return
-    } else {
-        await produceError(
-            'Transaction did not execute well!!',
-            {
-                txReceipt,
-                txID: broadcastResult.transaction.txID
-            },
-            pino
-        )
     }
+    // implicit else
+    await produceError(
+        'Transaction did not execute well!!',
+        {
+            txReceipt,
+            txID: broadcastResult.transaction.txID
+        },
+        pino
+    )
+
 }
 
 export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger): Promise<string> {
@@ -120,7 +124,7 @@ export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger):
     pino.info({ msg: `Initiated a transfer of ${amountHuman} TRX to ${to}` })
     await getTxReceipt(result.transaction.txID, pino)
     pino.info({ msg: "TRX transfer has succeeded" })
-    
+
     return result.transaction.txID
 }
 
@@ -142,12 +146,12 @@ export async function logRelayerState(pino: Logger) {
     const energyPercentageUsed = (relayerEenergyUsed / relayerEnergyLimit * 100).toFixed(2)
 
     const relayerTrxBalance = uintToHuman(await tronWeb.trx.getBalance(RelayerBase58Address), TRXDecimals).toFixed(0)
-    
+
     // TODO: need to query JustLendDao to see when we need to extend energy rental.
     const message = `Relayer state.
 Relayer's energy: ${relayerEenergyUsed} / ${relayerEnergyLimit} (${energyPercentageUsed}%) is used. ${relayerEnergyBalance} energy is available.
 Relayer's balance: ${relayerTrxBalance} TRX.`
-    
+
     await sendTelegramNotification(message, pino)
 }
 
@@ -155,7 +159,7 @@ let latestConfirmedBlock: Block
 
 export async function getLatestConfirmedBlock(pino: Logger): Promise<Block> {
     const maxLatestBlockAge = 3600 * 2 * 1000 // 2 hours (in milliseconds)
-    if (!latestConfirmedBlock || Date.now() - latestConfirmedBlock.block_header.raw_data.timestamp >  maxLatestBlockAge) {
+    if (!latestConfirmedBlock || Date.now() - latestConfirmedBlock.block_header.raw_data.timestamp > maxLatestBlockAge) {
         const msg = 'Latest confirmed block was not up-to-date!'
         pino.warn({
             msg,

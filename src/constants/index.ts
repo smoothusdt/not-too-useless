@@ -2,6 +2,7 @@ import { BigNumber, TronWeb } from "tronweb";
 import { USDTAbi } from "../usdtAbi";
 import PinoConstrucor from "pino"
 import { NetworkConfig } from "./networkConfig";
+import { JustLendAbi } from "../justLendAbi";
 
 export const tronWeb = new TronWeb({
     fullHost: NetworkConfig.rpcUrl,
@@ -43,8 +44,12 @@ export const SmoothRouterBase58 = NetworkConfig.routerBase58
 // energy constants
 export const MinAdminEnergy = NetworkConfig.relayerMinEnergy // Relayer must always have at least this amount of energy
 export const DelegateTrxForApproval = NetworkConfig.delegateTrxForApproval
+export const PaySunForApproval = NetworkConfig.paySunForApproval
 export const JustLendBase58 = NetworkConfig.justLendBase58
+export const JustLendContract = tronWeb.contract(JustLendAbi, JustLendBase58)
 export const ApproximateRentalPrice = 65 // sun per energy unit
+export const StakedSunPerEnergyUint = new BigNumber('79260') // how much sun (1 sun = 1e-6 trx) we need to stake to get 1 energy unit per day
+export const LiquidationReserveSeconds = 86400 // 86400 seconds = 1 day. On JustLend we need to always have trx deposited for at least 1 day of rental
 
 export const globalPino = PinoConstrucor({
     level: "debug"
