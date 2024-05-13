@@ -59,12 +59,13 @@ export async function getLocationByIp(ip: string): Promise<string> {
     }
 }
 
-// Logs error and throws
+// Logs error, sends a telegram notification and throws
 export async function produceError(message: string, context: any, pino: Logger) {
     pino.error({
         msg: message,
         context
     })
+    await sendTelegramNotification(`Alert!!! ${message}`, pino)
     throw new Error(message)
 }
 

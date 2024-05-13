@@ -3,7 +3,7 @@ import { DelegateTrxForApproval, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase
 import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
 import { uintToHuman } from "./util";
-import { sendTelegramNotification } from "./notifications";
+import { produceError, sendTelegramNotification } from "./notifications";
 
 export async function rentEnergy(to: string, sunToDelegate: number, sunToPay: number, pino: Logger): Promise<string> {
     pino.info({
@@ -318,5 +318,17 @@ Will extend energy rental: ${willExtendRental}.`
         // should never produce a recursion because we have already extended rental
         // and / or bought more energy
         await checkRelayerState(pino)
+    }
+}
+
+export async function checkRelayerStateLoop(pino: Logger) {
+    const interval = 86400 * 1000 // 1 day (in milliseconds)
+    while (true) {
+        try {
+            await checkRelayerState(pino)
+        } catch (error: any) {
+            await produceError('Could not check relayer status!!!', { error }, pino)
+        }
+        await new Promise(resolve => setTimeout(resolve, interval))
     }
 }
