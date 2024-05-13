@@ -1,6 +1,7 @@
 import { Logger } from "pino"
-import { ApproximateRentalPrice, ChainName, EnvironmentName, ExplorerUrl, TRXDecimals, TRXPrice, tronWeb } from "./constants"
+import { ChainName, EnvironmentName, ExplorerUrl, JL_SCALE, JustLendContract, StakedSunPerEnergyUint, TRXDecimals, TRXPrice, tronWeb } from "./constants"
 import { uintToHuman } from "./util"
+import { BigNumber } from "tronweb"
 
 const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN
 if (!TG_BOT_TOKEN) {
@@ -77,13 +78,26 @@ export async function formatTxMessage(txName: string, txID: string, pino: Logger
     const receipt = await tronWeb.trx.getUnconfirmedTransactionInfo(txID)
     const explorerUrl = `${ExplorerUrl}/transaction/${txID}`
 
+    const rentalRateRaw = await JustLendContract.methods._rentalRate(
+        0, // extra amount - we don't care, we just want to se the current rate
+        1, // resource type (1 = energy)
+    ).call()
+    const rentalRate = new BigNumber(rentalRateRaw.toString())
+    // How much SUN we need to pay to get 1 energy unit per day
+    const sunPerDayPrice = StakedSunPerEnergyUint
+        .multipliedBy(rentalRate)
+        .multipliedBy(86400)
+        .dividedBy(JL_SCALE)
+        .decimalPlaces(0)
+        .toNumber()
+
     const rentedEnergyUsed = receipt.receipt?.energy_usage || 0
-    const trxForRentedEnergy = uintToHuman(rentedEnergyUsed * ApproximateRentalPrice, TRXDecimals)
+    const trxForRentedEnergy = uintToHuman(rentedEnergyUsed * sunPerDayPrice, TRXDecimals)
     const trxBurntForExtraEnergy = uintToHuman(receipt.receipt?.energy_fee || 0, TRXDecimals)
-    
+
     const rentedBandwidthUsed = receipt.receipt?.net_usage || 0
     const trxBurntForExtraBandwidth = uintToHuman(receipt.receipt?.net_fee || 0, TRXDecimals)
-    
+
     const totalTrxSpent = trxForRentedEnergy.plus(trxBurntForExtraEnergy).plus(trxBurntForExtraBandwidth)
     const totalUsdtSpent = totalTrxSpent.multipliedBy(TRXPrice)
 

@@ -1,10 +1,9 @@
 import { Logger } from "pino";
-import { DelegateTrxForApproval, JustLendBase58, JustLendContract, LiquidationReserveSeconds, PaySunForApproval, RelayerBase58Address, StakedSunPerEnergyUint, tronWeb } from "./constants";
+import { DelegateTrxForApproval, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
 import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
-
-// JL = JustLend. Naming exactly the same way as it is named in the contract.
-const JL_SCALE = new BigNumber(10).pow(18)
+import { uintToHuman } from "./util";
+import { sendTelegramNotification } from "./notifications";
 
 export async function rentEnergy(to: string, sunToDelegate: number, sunToPay: number, pino: Logger): Promise<string> {
     pino.info({
@@ -168,7 +167,7 @@ export async function queryRelayerEnergyRentalStatus(pino: Logger): Promise<Ener
         .minus(fee) // reserved potential liquidation fee
         .dividedBy(rentedAmount.multipliedBy(rentalRate)) // How much we owe per second
         .multipliedBy(JL_SCALE) // 1e18
-        .minus(LiquidationReserveSeconds) // reserved in addition to `fee`
+        .minus(86400) // 1 day - reserved for liquidation in addition to `fee`
 
     // How much SUN we need to pay to get 1 energy unit per day
     const sunPerDayPrice = StakedSunPerEnergyUint.multipliedBy(rentalRate).multipliedBy(86400).dividedBy(JL_SCALE)
@@ -223,7 +222,7 @@ export async function rentEnergyForRelayer(
     liquidationFeeDeposit = BigNumber.max(liquidationFeeDeposit, relayerStatus.minFee)
 
     // Sun to deposit for the liquidation 1 day reserve
-    const liquidationDayDeposit = sunDelegatedAfterDeposit.multipliedBy(relayerStatus.rentalRate).multipliedBy(LiquidationReserveSeconds).dividedBy(JL_SCALE)
+    const liquidationDayDeposit = sunDelegatedAfterDeposit.multipliedBy(relayerStatus.rentalRate).multipliedBy(86400).dividedBy(JL_SCALE)
 
     const totalSunForLiquidationDeposit = liquidationFeeDeposit.plus(liquidationDayDeposit)
 
@@ -270,4 +269,54 @@ export async function returnRelayerEnergy(
         sunToReturn.decimalPlaces(0).toNumber(),
         pino
     )
+}
+
+// A function that can be fired from anywhere at any time to log
+// the current state of Smooth USDT into telegram.
+// If needed, it buys more energy.
+export async function checkRelayerState(pino: Logger) {
+    pino.info({
+        msg: 'Fetching & logging Smooth USDT state'
+    })
+    const relayerResources = await tronWeb.trx.getAccountResources(RelayerBase58Address)
+    pino.info({
+        msg: "Fetched relayer resources",
+        relayerResources,
+    })
+
+    const relayerEenergyUsed: number = relayerResources.EnergyUsed || 0;
+    const relayerEnergyLimit: number = relayerResources.EnergyLimit || 0;
+    const relayerEnergyBalance = relayerEnergyLimit - relayerEenergyUsed
+    const energyPercentageUsed = (relayerEenergyUsed / relayerEnergyLimit * 100).toFixed(2)
+
+    const relayerTrxBalance = uintToHuman(await tronWeb.trx.getBalance(RelayerBase58Address), TRXDecimals).toFixed(0)
+
+    const relayerStatus = await queryRelayerEnergyRentalStatus(pino)
+    const liquidatesIn = (relayerStatus.secondsUntilLiquidation.toNumber() / 86400).toFixed(2)
+
+    const willBuyMoreEnergy = relayerEnergyBalance < MinRelayerEnergy
+    const willExtendRental = relayerStatus.secondsUntilLiquidation.lt(ExtendIfRemainsLessThan)
+
+    const message = `Relayer energetical state.
+Relayer's energy: ${relayerEenergyUsed} / ${relayerEnergyLimit} (${energyPercentageUsed}%) is used. ${relayerEnergyBalance} energy is available.
+Relayer's balance: ${relayerTrxBalance} TRX.
+Energy rental liquidates in: ${liquidatesIn} days.
+Will buy more energy: ${willBuyMoreEnergy}.
+Will extend energy rental: ${willExtendRental}.`
+    await sendTelegramNotification(message, pino)
+
+    if (willBuyMoreEnergy || willExtendRental) {
+        // If no need to buy more energy then we simply extend the rental
+        const energyToBuy = willBuyMoreEnergy ? new BigNumber(500000) : BigNumber(0)
+        await rentEnergyForRelayer(
+            energyToBuy,
+            RentEnergyFor,
+            relayerStatus,
+            pino
+        )
+        await sendTelegramNotification('Rented more energy for the relayer!', pino)
+        // should never produce a recursion because we have already extended rental
+        // and / or bought more energy
+        await checkRelayerState(pino)
+    }
 }

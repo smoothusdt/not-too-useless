@@ -3,8 +3,8 @@ import { app } from "../app";
 import { SmoothRouterBase58, SmoothTransferFee, USDTDecimals, globalPino, tronWeb } from '../constants';
 import { uintToHuman } from '../util';
 import { formatTxMessage, getLocationByIp, produceError, sendTelegramNotification } from '../notifications';
-import { logRelayerState, makeBlockHeader } from '../network';
-import pino from 'pino';
+import { makeBlockHeader } from '../network';
+import { checkRelayerState } from '../energy';
 
 const schema = {
     body: Type.Object({
@@ -120,7 +120,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
         const location = await getLocationByIp((request.headers['true-client-ip'] as string) || request.ip)
         const txDetailsMessage = await formatTxMessage('Transfer', broadcastResult.transaction.txID, pino)
         await sendTelegramNotification(`Executed a transfer! From ${request.ip}, ${location}. It took ${executionTook}ms to reply.\n${txDetailsMessage}`, pino)
-        await logRelayerState(pino)
+        await checkRelayerState(pino)
     } catch (error: any) {
         pino.error({
             msg: 'Got an unhandled error',

@@ -128,33 +128,6 @@ export async function sendTrx(amountHuman: BigNumber, to: string, pino: Logger):
     return result.transaction.txID
 }
 
-// A function that can be fired from anywhere at any time to log
-// the current state of Smooth USDT into telegram and the database
-export async function logRelayerState(pino: Logger) {
-    pino.info({
-        msg: 'Fetching & logging Smooth USDT state'
-    })
-    const relayerResources = await tronWeb.trx.getAccountResources(RelayerBase58Address)
-    pino.info({
-        msg: "Fetched relayer resources",
-        relayerResources,
-    })
-
-    const relayerEenergyUsed: number = relayerResources.EnergyUsed || 0;
-    const relayerEnergyLimit: number = relayerResources.EnergyLimit || 0;
-    const relayerEnergyBalance = relayerEnergyLimit - relayerEenergyUsed
-    const energyPercentageUsed = (relayerEenergyUsed / relayerEnergyLimit * 100).toFixed(2)
-
-    const relayerTrxBalance = uintToHuman(await tronWeb.trx.getBalance(RelayerBase58Address), TRXDecimals).toFixed(0)
-
-    // TODO: need to query JustLendDao to see when we need to extend energy rental.
-    const message = `Relayer state.
-Relayer's energy: ${relayerEenergyUsed} / ${relayerEnergyLimit} (${energyPercentageUsed}%) is used. ${relayerEnergyBalance} energy is available.
-Relayer's balance: ${relayerTrxBalance} TRX.`
-
-    await sendTelegramNotification(message, pino)
-}
-
 let latestConfirmedBlock: Block
 
 export async function getLatestConfirmedBlock(pino: Logger): Promise<Block> {

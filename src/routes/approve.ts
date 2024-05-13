@@ -1,8 +1,8 @@
 import { Type } from '@sinclair/typebox'
 import { app } from "../app";
-import { ExplorerUrl, SmoothRouterBase58, USDTAddressBase58, globalPino } from '../constants';
-import { broadcastTx, logRelayerState, sendTrx } from '../network';
-import { finishEnergyRentalForApproval, rentEnergyForApproval } from '../energy';
+import { SmoothRouterBase58, USDTAddressBase58, globalPino } from '../constants';
+import { broadcastTx, sendTrx } from '../network';
+import { finishEnergyRentalForApproval, checkRelayerState, rentEnergyForApproval } from '../energy';
 import { decodeApprovalTransaction } from '../encoding';
 import { Hex } from 'viem';
 import { BigNumber } from 'tronweb';
@@ -129,7 +129,7 @@ app.post('/approve', { schema }, async function (request, reply) {
 3. ${await formatTxMessage('Approve Router', decodedApproveTx.txID, pino)}
 4. ${await formatTxMessage('Return Energy', returnEnergyTxID, pino)}`
         await sendTelegramNotification(message, pino)
-        await logRelayerState(pino)
+        await checkRelayerState(pino)
     } catch (error: any) {
         pino.error({
             msg: 'Got an unhandled error',

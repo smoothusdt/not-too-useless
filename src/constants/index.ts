@@ -47,9 +47,11 @@ export const DelegateTrxForApproval = NetworkConfig.delegateTrxForApproval
 export const PaySunForApproval = NetworkConfig.paySunForApproval
 export const JustLendBase58 = NetworkConfig.justLendBase58
 export const JustLendContract = tronWeb.contract(JustLendAbi, JustLendBase58)
-export const ApproximateRentalPrice = 65 // sun per energy unit
 export const StakedSunPerEnergyUint = new BigNumber('79260') // how much sun (1 sun = 1e-6 trx) we need to stake to get 1 energy unit per day
-export const LiquidationReserveSeconds = 86400 // 86400 seconds = 1 day. On JustLend we need to always have trx deposited for at least 1 day of rental
+export const JL_SCALE = new BigNumber(10).pow(18) // JL = JustLend.
+export const RentEnergyFor = new BigNumber(86400 * 7) // always have 1 week of rental reserved
+export const ExtendIfRemainsLessThan = new BigNumber(86400) // extend energy rental if there is less than 1 day until liquidation
+export const MinRelayerEnergy = 180_000 // buy more energy if we run lower than this number
 
 export const globalPino = PinoConstrucor({
     level: "debug"
