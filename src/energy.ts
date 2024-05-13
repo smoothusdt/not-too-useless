@@ -3,8 +3,8 @@ import { DelegateTrxForApproval, JustLendBase58, JustLendContract, LiquidationRe
 import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
 
-// JL = JustLend
-const JLScale = new BigNumber(10).pow(18)
+// JL = JustLend. Naming exactly the same way as it is named in the contract.
+const JL_SCALE = new BigNumber(10).pow(18)
 
 export async function rentEnergy(to: string, sunToDelegate: number, sunToPay: number, pino: Logger): Promise<string> {
     pino.info({
@@ -37,7 +37,6 @@ export async function rentEnergy(to: string, sunToDelegate: number, sunToPay: nu
     const signedTx = await tronWeb.trx.sign(transaction)
     pino.info({
         msg: "Computed & signed a rent-energy transaction",
-        signedTx
     })
     await broadcastTx(signedTx, pino)
     pino.info({
@@ -45,7 +44,7 @@ export async function rentEnergy(to: string, sunToDelegate: number, sunToPay: nu
     })
 
     return signedTx.txID
-} 
+}
 
 // Rents energy on JustLendDAO to make an approval transaction
 // from the user's wallet.
@@ -58,11 +57,11 @@ export async function rentEnergyForApproval(to: string, pino: Logger): Promise<s
     )
 }
 
-export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: Logger): Promise<string> {
+export async function returnEnergy(wasRentedTo: string, returnSun: number, pino: Logger): Promise<string> {
     const functionSelector = 'returnResource(address,uint256,uint256)';
     const parameter = [
         { type: 'address', value: wasRentedTo },
-        { type: 'uint256', value: DelegateTrxForApproval }, // return the delegated TRX
+        { type: 'uint256', value: returnSun }, // return the delegated TRX
         { type: 'uint256', value: '1' }, // resourceType - always 1 for energy
     ]
     const startTs = Date.now()
@@ -72,7 +71,7 @@ export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: L
         {
             blockHeader: await makeBlockHeader(pino),
             txLocal: true
-        },  
+        },
         parameter,
     );
     pino.info({
@@ -82,7 +81,6 @@ export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: L
     const signedTx = await tronWeb.trx.sign(transaction)
     pino.info({
         msg: "Computed & signed a return-energy transaction",
-        signedTx
     })
     await broadcastTx(signedTx, pino)
     pino.info({
@@ -93,8 +91,16 @@ export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: L
     return signedTx.txID
 }
 
+export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: Logger): Promise<string> {
+    return await returnEnergy(
+        wasRentedTo,
+        DelegateTrxForApproval,
+        pino
+    )
+}
+
 // All units are uint (not human-readable)
-export interface RelayerEnergyStatus {
+export interface EnergyRentalStatus {
     securityDeposit: BigNumber
     rentedAmount: BigNumber
     rentalRate: BigNumber
@@ -102,12 +108,14 @@ export interface RelayerEnergyStatus {
     feeRatio: BigNumber
     fee: BigNumber
     secondsUntilLiquidation: BigNumber
+    dailySpentTrx: BigNumber
+    sunPerDayPrice: BigNumber
 }
 
 // Queries JustLend's smart contract.
 // Doesn't need to be fast since it always happens in the backdground
 // and does not influence response speed.
-export async function queryRelayerEnergyStatus(pino: Logger): Promise<RelayerEnergyStatus> {
+export async function queryRelayerEnergyRentalStatus(pino: Logger): Promise<EnergyRentalStatus> {
     pino.info({
         msg: 'Querying relayer energy status on JustLendDAO'
     })
@@ -129,7 +137,7 @@ export async function queryRelayerEnergyStatus(pino: Logger): Promise<RelayerEne
     const rentedAmount = new BigNumber(rental.amount.toString()) // rented TRX (in Sun)
 
     if (rentedAmount.eq(0)) {
-        throw new Error('Relayer rented amount for energy is zero, which is extremely bad!') 
+        throw new Error('Relayer rented amount for energy is zero, which is extremely bad!')
     }
 
     const rentalRateRaw = await JustLendContract.methods._rentalRate(
@@ -150,21 +158,29 @@ export async function queryRelayerEnergyStatus(pino: Logger): Promise<RelayerEne
         rentedAmount,
         rentalRate,
         minFee,
-        feeRatio
+        feeRatio,
     })
 
     // This is just a copy of the calculation that happens inside the JustLend contract
-    const ratioFee = rentedAmount.multipliedBy(feeRatio).dividedBy(JLScale)
+    const ratioFee = rentedAmount.multipliedBy(feeRatio).dividedBy(JL_SCALE)
     const fee = BigNumber.max(minFee, ratioFee)
     const secondsUntilLiquidation = securityDeposit
         .minus(fee) // reserved potential liquidation fee
         .dividedBy(rentedAmount.multipliedBy(rentalRate)) // How much we owe per second
-        .multipliedBy(JLScale) // 1e18
+        .multipliedBy(JL_SCALE) // 1e18
         .minus(LiquidationReserveSeconds) // reserved in addition to `fee`
 
+    // How much SUN we need to pay to get 1 energy unit per day
+    const sunPerDayPrice = StakedSunPerEnergyUint.multipliedBy(rentalRate).multipliedBy(86400).dividedBy(JL_SCALE)
+    
+    // How much TRX (human amount) we are currently spending every day on energy rental
+    const dailySpentTrx = rentedAmount.multipliedBy(rentalRate).dividedBy(JL_SCALE).multipliedBy(86400).shiftedBy(-6)
+
     pino.info({
-        msg: 'Seconds until relayer energy rental liquidation',
-        secondsUntilLiquidation
+        msg: 'Calculated relayer energy rental related values',
+        secondsUntilLiquidation,
+        dailySpentTrx,
+        sunPerDayPrice
     })
 
     return {
@@ -174,7 +190,9 @@ export async function queryRelayerEnergyStatus(pino: Logger): Promise<RelayerEne
         minFee,
         feeRatio,
         fee,
-        secondsUntilLiquidation
+        secondsUntilLiquidation,
+        dailySpentTrx,
+        sunPerDayPrice
     }
 }
 
@@ -186,45 +204,70 @@ export async function queryRelayerEnergyStatus(pino: Logger): Promise<RelayerEne
 export async function rentEnergyForRelayer(
     energyToRent: BigNumber,
     durationSeconds: BigNumber,
-    relayerStatus: RelayerEnergyStatus,
+    relayerStatus: EnergyRentalStatus,
     pino: Logger
 ): Promise<string> {
     pino.info({
         msg: 'Renting energy for relayer',
         energyToRent
     })
-    const sunToDelegate = energyToRent.multipliedBy(StakedSunPerEnergyUint)
+    const extraSunToDelegate = energyToRent.multipliedBy(StakedSunPerEnergyUint)
 
-    // How much sun we need to pay for the given rent duration
-    const sunForRent = sunToDelegate.multipliedBy(relayerStatus.rentalRate).multipliedBy(durationSeconds).dividedBy(JLScale)
+    // Total sun delegated after performing this additional deposit
+    const sunDelegatedAfterDeposit = relayerStatus.rentedAmount.plus(extraSunToDelegate)
 
-    // Sun to deposit for the liquidation fee reserve
-    const liquidationFeeReserve = sunToDelegate.multipliedBy(relayerStatus.feeRatio).dividedBy(JLScale)
+    // Sun needede to pay for all of the delegated energy for the given rent duration
+    const sunToPayForRent = sunDelegatedAfterDeposit.multipliedBy(relayerStatus.rentalRate).multipliedBy(durationSeconds).dividedBy(JL_SCALE)
+
+    let liquidationFeeDeposit = sunDelegatedAfterDeposit.multipliedBy(relayerStatus.feeRatio).dividedBy(JL_SCALE)
+    liquidationFeeDeposit = BigNumber.max(liquidationFeeDeposit, relayerStatus.minFee)
 
     // Sun to deposit for the liquidation 1 day reserve
-    const liquidationDayReserve = sunToDelegate.multipliedBy(relayerStatus.rentalRate).multipliedBy(LiquidationReserveSeconds).dividedBy(JLScale)
+    const liquidationDayDeposit = sunDelegatedAfterDeposit.multipliedBy(relayerStatus.rentalRate).multipliedBy(LiquidationReserveSeconds).dividedBy(JL_SCALE)
 
-    const totalSunForLiquidationReserve = liquidationFeeReserve.plus(liquidationDayReserve)
+    const totalSunForLiquidationDeposit = liquidationFeeDeposit.plus(liquidationDayDeposit)
 
-    const sunToPay = sunForRent.plus(totalSunForLiquidationReserve)
+    // How much sun needs to be deposited in JustLend after this transaction
+    const totalSunToBeDeposited = sunToPayForRent.plus(totalSunForLiquidationDeposit)
+
+    const sunToDepositNow = BigNumber.max(0, totalSunToBeDeposited.minus(relayerStatus.securityDeposit))
 
     pino.info({
         msg: 'Calculated amounts for additional energy rental',
-        energyToRent,
-        durationSeconds,
-        relayerStatus,
-        sunToDelegate,
-        sunForRent,
-        liquidationFeeReserve,
-        liquidationDayReserve,
-        totalSunForLiquidationReserve,
-        sunToPay
+        extraSunToDelegate,
+        sunDelegatedAfterDeposit,
+        sunToPayForRent,
+        liquidationFeeDeposit,
+        liquidationDayDeposit,
+        totalSunForLiquidationDeposit,
+        totalSunToBeDeposited,
+        sunToDepositNow,
     })
 
     return await rentEnergy(
         RelayerBase58Address,
-        sunToDelegate.decimalPlaces(0).toNumber(),
-        sunToPay.decimalPlaces(0).toNumber(),
+        extraSunToDelegate.decimalPlaces(0).toNumber(),
+        sunToDepositNow.decimalPlaces(0).toNumber(),
         pino,
+    )
+}
+
+export async function returnRelayerEnergy(
+    energyToReturn: BigNumber,
+    pino: Logger
+): Promise<string> {
+    pino.info({
+        msg: 'Returning some of the relayer rented energy',
+        energyToReturn
+    })
+    const sunToReturn = energyToReturn.multipliedBy(StakedSunPerEnergyUint)
+    pino.info({
+        msg: 'Calculated how much sun to return',
+        sunToReturn
+    })
+    return await returnEnergy(
+        RelayerBase58Address,
+        sunToReturn.decimalPlaces(0).toNumber(),
+        pino
     )
 }

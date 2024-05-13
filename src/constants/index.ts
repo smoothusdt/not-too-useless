@@ -18,7 +18,7 @@ if (!RelayerBase58Address) {
 console.log(`Set up the api with relayer wallet ${RelayerBase58Address} on chain ${NetworkConfig.chainName}`)
 
 // misc constants
-export const EnvironmentName = process.env.ENVIRONMENT_NAME // 'Alexey Mac', 'Dillon Mac', 'Hosted Render', etc. Don't use characters that need to be escaped in telegram.
+export const EnvironmentName = process.env.ENVIRONMENT_NAME // 'alexey-mac', 'dillon-mac', 'hosted-render', etc.
 if (!EnvironmentName) {
     throw new Error('ENVIRONMENT_NAME .env variable is not set')
 }
