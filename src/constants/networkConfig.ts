@@ -11,7 +11,7 @@ interface NetworkConfigInterface {
     delegateTrxForApproval: number
     paySunForApproval: number
     explorerUrl: string
-    stakedSunPerEnergyUnit: BigNumber
+    stakedSunPerEnergyUnit: BigNumber // TODO: find a way to query it automatically since it slowly changes over time
 }
 
 const MainnetConfig: NetworkConfigInterface = {
