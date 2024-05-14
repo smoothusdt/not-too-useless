@@ -136,7 +136,7 @@ export async function queryRelayerEnergyRentalStatus(pino: Logger): Promise<Ener
     const rentedAmount = new BigNumber(rental.amount.toString()) // rented TRX (in Sun)
 
     if (rentedAmount.eq(0)) {
-        throw new Error('Relayer rented amount for energy is zero, which is extremely bad!')
+        throw new Error('Relayer delegated TRX is zero, which is extremely bad!')
     }
 
     const rentalRateRaw = await JustLendContract.methods._rentalRate(
@@ -326,7 +326,12 @@ export async function checkRelayerStateLoop(pino: Logger) {
         try {
             await checkRelayerState(pino)
         } catch (error: any) {
-            await produceError('Could not check relayer status!!!', { error }, pino)
+            const message = `Could not check relayer status due to "${error.message}"!!!`
+            pino.error({
+                msg: message,
+                error: error.message
+            })
+            await sendTelegramNotification(`Alert!!! ${message}`, pino)
         }
         await new Promise(resolve => setTimeout(resolve, RelayerCheckLoopInterval))
     }

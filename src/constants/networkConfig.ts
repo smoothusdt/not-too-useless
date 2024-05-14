@@ -33,7 +33,7 @@ const ShastaConfig: NetworkConfigInterface = {
     chainName: 'shasta',
     rpcUrl: 'https://api.shasta.trongrid.io',
     usdtAddressBase58: 'TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs',
-    justLendBase58: 'TAqumVGFKrqmcoDaX6ijMDhsoecEHvkX6u',
+    justLendBase58: 'TJRrrftRMv5mF2iv7C6FtFuqgbHjvRxARd',
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
     relayerMinEnergy: 0,
     delegateTrxForApproval: 1000_000000,

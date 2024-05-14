@@ -36,7 +36,6 @@ export async function sendTelegramNotification(message: string, pino: Logger) {
     if (data.ok === true) {
         pino.info({
             msg: 'Successfully sent a telegram notification',
-            message
         })
     } else {
         pino.error({
