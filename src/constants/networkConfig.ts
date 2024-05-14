@@ -1,3 +1,5 @@
+import { BigNumber } from "tronweb"
+
 interface NetworkConfigInterface {
     chainId: number
     chainName: string
@@ -9,6 +11,7 @@ interface NetworkConfigInterface {
     delegateTrxForApproval: number
     paySunForApproval: number
     explorerUrl: string
+    stakedSunPerEnergyUnit: BigNumber
 }
 
 const MainnetConfig: NetworkConfigInterface = {
@@ -21,7 +24,8 @@ const MainnetConfig: NetworkConfigInterface = {
     relayerMinEnergy: 150_000,
     delegateTrxForApproval: 8000_000000,
     paySunForApproval: 60_000000,
-    explorerUrl: 'https://tronscan.org/#'
+    explorerUrl: 'https://tronscan.org/#',
+    stakedSunPerEnergyUnit: new BigNumber('79260')
 }
 
 const ShastaConfig: NetworkConfigInterface = {
@@ -29,12 +33,13 @@ const ShastaConfig: NetworkConfigInterface = {
     chainName: 'shasta',
     rpcUrl: 'https://api.shasta.trongrid.io',
     usdtAddressBase58: 'TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs',
-    justLendBase58: 'TQwLCqbjeDjo87jkWaiYW2LTgVAfJBaCt5',
+    justLendBase58: 'TAqumVGFKrqmcoDaX6ijMDhsoecEHvkX6u',
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
     relayerMinEnergy: 0,
     delegateTrxForApproval: 1000_000000,
     paySunForApproval: 10_000000,
-    explorerUrl: 'https://shasta.tronscan.org/#'
+    explorerUrl: 'https://shasta.tronscan.org/#',
+    stakedSunPerEnergyUnit: new BigNumber('11294')
 }
 
 export let NetworkConfig: NetworkConfigInterface
