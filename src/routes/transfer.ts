@@ -119,7 +119,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
         await new Promise(resolve => setTimeout(resolve, 3000))
         const location = await getLocationByIp((request.headers['true-client-ip'] as string) || request.ip)
         const txDetailsMessage = await formatTxMessage('Transfer', broadcastResult.transaction.txID, pino)
-        await sendTelegramNotification(`Executed a transfer! From ${request.ip}, ${location}. It took ${executionTook}ms to reply.\n${txDetailsMessage}`, pino)
+        await sendTelegramNotification(`Executed a transfer for ${body.from}! From ${request.ip}, ${location}. It took ${executionTook}ms to reply.\n${txDetailsMessage}`, pino)
         await checkRelayerState(pino)
     } catch (error: any) {
         pino.error({

@@ -5,6 +5,7 @@ import { Logger } from "pino"
 import { produceError, sendTelegramNotification } from "./notifications"
 import { Block, BlockHeader } from "./tronWebTypes/APIResponse"
 import { Transaction } from "./tronWebTypes/Transaction"
+import { TransactionInfo } from "./tronWebTypes/Trx"
 
 
 /**
@@ -31,9 +32,9 @@ export async function getUsdtBalance(address: string, pino: Logger): Promise<Big
     return balanceHuman
 }
 
-export async function getTxReceipt(txID: string, pino: Logger): Promise<any> {
+export async function getTxReceipt(txID: string, pino: Logger): Promise<TransactionInfo> {
     const startTs = Date.now()
-    const timeout = 60000 // should never fucking timeout
+    const timeout = 60000 // should never timeout
     pino.info({
         msg: "Fetching transaction receipt",
         txID,

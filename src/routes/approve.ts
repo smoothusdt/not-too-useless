@@ -123,7 +123,7 @@ app.post('/approve', { schema }, async function (request, reply) {
         await new Promise(resolve => setTimeout(resolve, 3000))
         await new Promise(resolve => setTimeout(resolve, 3000))
         const location = await getLocationByIp((request.headers['true-client-ip'] as string) || request.ip)
-        const message = `Executed an approval! From ${request.ip}, ${location}. It took ${executionTook}ms to reply.
+        const message = `Executed an approval for ${decodedApproveTx.fromBase58Address}! From ${request.ip}, ${location}. It took ${executionTook}ms to reply.
 1. ${await formatTxMessage('Send TRX', trxTxID, pino)}
 2. ${await formatTxMessage('Rent Energy', rentEnergyTxID, pino)}
 3. ${await formatTxMessage('Approve Router', decodedApproveTx.txID, pino)}
