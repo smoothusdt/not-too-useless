@@ -314,7 +314,7 @@ export async function queryDetailedRelayerState(pino: Logger) {
 Relayer's energy: ${relayerEenergyUsed} / ${relayerEnergyLimit} (${energyPercentageUsed}%) is used. ${relayerEnergyBalance} energy is available.
 Relayer's balance: ${relayerTrxBalance} TRX.
 Energy rental liquidates in: ${liquidatesIn} days.
-Will buy more energy: ${willBuyMoreEnergy}.
+Will buy more energy: ${willBuyMoreEnergy} (threshold: ${MinRelayerEnergy} energy).
 Will extend energy rental: ${willExtendRental}.`
     await sendTelegramNotification(message, pino)
 
