@@ -2,6 +2,7 @@ import { Logger } from "pino"
 import { ChainName, EnvironmentName, ExplorerUrl, JL_SCALE, JustLendContract, StakedSunPerEnergyUint, TRXDecimals, TRXPrice, tronWeb } from "./constants"
 import { uintToHuman } from "./util"
 import { BigNumber } from "tronweb"
+import { getTxReceipt } from "./network"
 
 const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN
 if (!TG_BOT_TOKEN) {
@@ -75,7 +76,7 @@ export async function formatTxMessage(txName: string, txID: string, pino: Logger
         txName,
         txID
     })
-    const receipt = await tronWeb.trx.getUnconfirmedTransactionInfo(txID)
+    const receipt = await getTxReceipt(txID, pino)
     const explorerUrl = `${ExplorerUrl}/transaction/${txID}`
 
     const rentalRateRaw = await JustLendContract.methods._rentalRate(
