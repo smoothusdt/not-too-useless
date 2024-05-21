@@ -1,5 +1,5 @@
 import { Logger } from "pino";
-import { DelegateTrxForApproval, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
+import { DelegateSunForApproval, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
 import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
 import { uintToHuman } from "./util";
@@ -51,7 +51,7 @@ export async function rentEnergy(to: string, sunToDelegate: number, sunToPay: nu
 export async function rentEnergyForApproval(to: string, pino: Logger): Promise<string> {
     return await rentEnergy(
         to,
-        DelegateTrxForApproval,
+        DelegateSunForApproval,
         PaySunForApproval,
         pino,
     )
@@ -94,7 +94,7 @@ export async function returnEnergy(wasRentedTo: string, returnSun: number, pino:
 export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: Logger): Promise<string> {
     return await returnEnergy(
         wasRentedTo,
-        DelegateTrxForApproval,
+        DelegateSunForApproval,
         pino
     )
 }

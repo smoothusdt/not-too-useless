@@ -42,7 +42,7 @@ export const SmoothFeeCollector = 'TQyMmeSrADWyxZsV6YvVu6XDV8hdq72ykb'
 export const SmoothRouterBase58 = NetworkConfig.routerBase58
 
 // energy constants
-export const DelegateTrxForApproval = NetworkConfig.delegateTrxForApproval
+export const DelegateSunForApproval = NetworkConfig.delegateSunForApproval
 export const PaySunForApproval = NetworkConfig.paySunForApproval
 export const JustLendBase58 = NetworkConfig.justLendBase58
 export const JustLendContract = tronWeb.contract(JustLendAbi, JustLendBase58)
@@ -51,7 +51,7 @@ export const JL_SCALE = new BigNumber(10).pow(18) // JL = JustLend.
 export const RentEnergyFor = new BigNumber(86400 * 7) // always have 1 week of rental reserved
 export const ExtendIfRemainsLessThan = new BigNumber(86400 * 2) // extend energy rental if there are less than 2 days until liquidation
 export const RelayerCheckLoopInterval = 3600 * 10 * 1000 // 10 hours in milliseconds. Must be less than ExtendIfRemainsLessThan so that we have some time to extend rent.
-export const MinRelayerEnergy = 180_000 // buy more energy if we run lower than this number
+export const MinRelayerEnergy = NetworkConfig.minRelayerEnergy // buy more energy if we run lower than this number
 
 export const globalPino = PinoConstrucor({
     level: "debug"
