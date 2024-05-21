@@ -7,6 +7,7 @@ interface NetworkConfigInterface {
     usdtAddressBase58: string
     justLendBase58: string
     routerBase58: string
+    activationProxyBase58: string
     minRelayerEnergy: number
     delegateSunForApproval: number
     paySunForApproval: number
@@ -21,6 +22,7 @@ const MainnetConfig: NetworkConfigInterface = {
     usdtAddressBase58: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
     justLendBase58: 'TU2MJ5Veik1LRAgjeSzEdvmDYx7mefJZvd',
     routerBase58: '', // TODO: deploy the updated version
+    activationProxyBase58: '', // TODO: deploy
     minRelayerEnergy: 150_000,
     delegateSunForApproval: 8000_000000,
     paySunForApproval: 60_000000,
@@ -35,6 +37,7 @@ const ShastaConfig: NetworkConfigInterface = {
     usdtAddressBase58: 'TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs',
     justLendBase58: 'TJRrrftRMv5mF2iv7C6FtFuqgbHjvRxARd',
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
+    activationProxyBase58: 'TAdYrD7GSPZtrAQG6ZCNUmKRxGfKRaSDgW',
     minRelayerEnergy: 0, // temporarily disabled auto-renewal
     delegateSunForApproval: 1000_000000,
     paySunForApproval: 10_000000,
