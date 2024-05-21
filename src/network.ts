@@ -1,5 +1,5 @@
 import { BigNumber, TronWeb } from "tronweb"
-import { RelayerBase58Address, MinAdminEnergy, TRXDecimals, USDTContract, USDTDecimals, tronWeb } from "./constants"
+import { RelayerBase58Address, TRXDecimals, USDTContract, USDTDecimals, tronWeb } from "./constants"
 import { humanToUint, uintToHuman } from "./util"
 import { Logger } from "pino"
 import { produceError, sendTelegramNotification } from "./notifications"

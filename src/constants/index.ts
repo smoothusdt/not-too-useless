@@ -42,7 +42,6 @@ export const SmoothFeeCollector = 'TQyMmeSrADWyxZsV6YvVu6XDV8hdq72ykb'
 export const SmoothRouterBase58 = NetworkConfig.routerBase58
 
 // energy constants
-export const MinAdminEnergy = NetworkConfig.relayerMinEnergy // Relayer must always have at least this amount of energy
 export const DelegateTrxForApproval = NetworkConfig.delegateTrxForApproval
 export const PaySunForApproval = NetworkConfig.paySunForApproval
 export const JustLendBase58 = NetworkConfig.justLendBase58

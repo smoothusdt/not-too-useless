@@ -4,6 +4,7 @@ import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
 import { uintToHuman } from "./util";
 import { produceError, sendTelegramNotification } from "./notifications";
+import { Mutex } from "async-mutex";
 
 export async function rentEnergy(to: string, sunToDelegate: number, sunToPay: number, pino: Logger): Promise<string> {
     pino.info({
@@ -271,53 +272,62 @@ export async function returnRelayerEnergy(
     )
 }
 
+// Using a mutex so that we don't accidentally double-buy energy if 
+// checkRelayerState is called 2 times simultaneously
+const CheckRelayerMutex = new Mutex()
+
 // A function that can be fired from anywhere at any time to log
 // the current state of Smooth USDT into telegram.
 // If needed, it buys more energy.
 export async function checkRelayerState(pino: Logger) {
-    pino.info({
-        msg: 'Fetching & logging Smooth USDT state'
-    })
-    const relayerResources = await tronWeb.trx.getAccountResources(RelayerBase58Address)
-    pino.info({
-        msg: "Fetched relayer resources",
-        relayerResources,
-    })
+    const releaseMutex = await CheckRelayerMutex.acquire()
+    try {
+        pino.info({
+            msg: 'Fetching & logging Smooth USDT state'
+        })
+        const relayerResources = await tronWeb.trx.getAccountResources(RelayerBase58Address)
+        pino.info({
+            msg: "Fetched relayer resources",
+            relayerResources,
+        })
 
-    const relayerEenergyUsed: number = relayerResources.EnergyUsed || 0;
-    const relayerEnergyLimit: number = relayerResources.EnergyLimit || 0;
-    const relayerEnergyBalance = relayerEnergyLimit - relayerEenergyUsed
-    const energyPercentageUsed = (relayerEenergyUsed / relayerEnergyLimit * 100).toFixed(2)
+        const relayerEenergyUsed: number = relayerResources.EnergyUsed || 0;
+        const relayerEnergyLimit: number = relayerResources.EnergyLimit || 0;
+        const relayerEnergyBalance = relayerEnergyLimit - relayerEenergyUsed
+        const energyPercentageUsed = (relayerEenergyUsed / relayerEnergyLimit * 100).toFixed(2)
 
-    const relayerTrxBalance = uintToHuman(await tronWeb.trx.getBalance(RelayerBase58Address), TRXDecimals).toFixed(0)
+        const relayerTrxBalance = uintToHuman(await tronWeb.trx.getBalance(RelayerBase58Address), TRXDecimals).toFixed(0)
 
-    const relayerStatus = await queryRelayerEnergyRentalStatus(pino)
-    const liquidatesIn = (relayerStatus.secondsUntilLiquidation.toNumber() / 86400).toFixed(2)
+        const relayerStatus = await queryRelayerEnergyRentalStatus(pino)
+        const liquidatesIn = (relayerStatus.secondsUntilLiquidation.toNumber() / 86400).toFixed(2)
 
-    const willBuyMoreEnergy = relayerEnergyBalance < MinRelayerEnergy
-    const willExtendRental = relayerStatus.secondsUntilLiquidation.lt(ExtendIfRemainsLessThan)
+        const willBuyMoreEnergy = relayerEnergyBalance < MinRelayerEnergy
+        const willExtendRental = relayerStatus.secondsUntilLiquidation.lt(ExtendIfRemainsLessThan)
 
-    const message = `Relayer energetical state.
+        const message = `Relayer energetical state.
 Relayer's energy: ${relayerEenergyUsed} / ${relayerEnergyLimit} (${energyPercentageUsed}%) is used. ${relayerEnergyBalance} energy is available.
 Relayer's balance: ${relayerTrxBalance} TRX.
 Energy rental liquidates in: ${liquidatesIn} days.
 Will buy more energy: ${willBuyMoreEnergy}.
 Will extend energy rental: ${willExtendRental}.`
-    await sendTelegramNotification(message, pino)
+        await sendTelegramNotification(message, pino)
 
-    if (willBuyMoreEnergy || willExtendRental) {
-        // If no need to buy more energy then we simply extend the rental
-        const energyToBuy = willBuyMoreEnergy ? new BigNumber(500000) : BigNumber(0)
-        await rentEnergyForRelayer(
-            energyToBuy,
-            RentEnergyFor,
-            relayerStatus,
-            pino
-        )
-        await sendTelegramNotification('Rented more energy for the relayer!', pino)
-        // should never produce a recursion because we have already extended rental
-        // and / or bought more energy
-        await checkRelayerState(pino)
+        if (willBuyMoreEnergy || willExtendRental) {
+            // If no need to buy more energy then we simply extend the rental
+            const energyToBuy = willBuyMoreEnergy ? new BigNumber(500000) : BigNumber(0)
+            await rentEnergyForRelayer(
+                energyToBuy,
+                RentEnergyFor,
+                relayerStatus,
+                pino
+            )
+            await sendTelegramNotification('Rented more energy for the relayer!', pino)
+            // should never produce a recursion because we have already extended rental
+            // and / or bought more energy
+            await checkRelayerState(pino)
+        }
+    } finally {
+        releaseMutex()
     }
 }
 
