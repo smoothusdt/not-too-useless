@@ -39,7 +39,7 @@ export async function getTxReceipt(txID: string, pino: Logger): Promise<Transact
         msg: "Fetching transaction receipt",
         txID,
     })
-    while (true) {
+    for (; ;) {
         const txInfo = await tronWeb.trx.getUnconfirmedTransactionInfo(txID)
         pino.info({
             msg: "Fetched transaction info. Checking whether it's non-empty",
@@ -151,7 +151,7 @@ export async function getLatestConfirmedBlock(pino: Logger): Promise<Block> {
 // but we are updating the latest confirmed block every hour just to be sure it's ok.
 export async function updateLatestConfirmedBlockLoop(pino: Logger) {
     const interval = 3600 * 1000 // 1 hour (in milliseconds)
-    while (true) {
+    for (; ;) {
         try {
             latestConfirmedBlock = await tronWeb.trx.getConfirmedCurrentBlock()
             pino.info({

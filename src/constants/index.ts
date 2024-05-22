@@ -4,6 +4,10 @@ import PinoConstrucor from "pino"
 import { NetworkConfig } from "./networkConfig";
 import { JustLendAbi } from "../justLendAbi";
 
+export const globalPino = PinoConstrucor({
+    level: "debug"
+})
+
 export const tronWeb = new TronWeb({
     fullHost: NetworkConfig.rpcUrl,
     headers: { "TRON-PRO-API-KEY": 'a40790e5-a3f3-4cbe-9362-055eaf5d594d' } as any,
@@ -15,7 +19,7 @@ export const RelayerBase58Address = tronWeb.address.fromPrivateKey(process.env.R
 if (!RelayerBase58Address) {
     throw new Error('RELAYER_PRIVATE_KEY .env variable is not set or wrong')
 }
-console.log(`Set up the api with relayer wallet ${RelayerBase58Address} on chain ${NetworkConfig.chainName}`)
+globalPino.info({ msg: `Set up the api with relayer wallet ${RelayerBase58Address} on chain ${NetworkConfig.chainName}` })
 
 // misc constants
 export const EnvironmentName = process.env.ENVIRONMENT_NAME // 'alexey-mac', 'dillon-mac', 'hosted-render', etc.
@@ -53,7 +57,3 @@ export const RentEnergyFor = new BigNumber(86400 * 7) // always have 1 week of r
 export const ExtendIfRemainsLessThan = new BigNumber(86400 * 2) // extend energy rental if there are less than 2 days until liquidation
 export const RelayerCheckLoopInterval = 3600 * 10 * 1000 // 10 hours in milliseconds. Must be less than ExtendIfRemainsLessThan so that we have some time to extend rent.
 export const MinRelayerEnergy = NetworkConfig.minRelayerEnergy // buy more energy if we run lower than this number
-
-export const globalPino = PinoConstrucor({
-    level: "debug"
-})

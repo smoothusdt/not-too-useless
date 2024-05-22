@@ -354,7 +354,7 @@ export async function checkRelayerState(pino: Logger) {
 }
 
 export async function checkRelayerStateLoop(pino: Logger) {
-    while (true) {
+    for (; ;) {
         try {
             await checkRelayerState(pino)
         } catch (error: any) {

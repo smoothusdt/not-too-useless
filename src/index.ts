@@ -19,9 +19,12 @@ sendTelegramNotification('API started', globalPino)
 // Run the server!
 app.listen({ port, host }, function (err) {
     if (err) {
-        console.error(err)
+        globalPino.error({
+            error: err.message,
+            err
+        })
         process.exit(1)
     } else {
-        console.log(`Server is now listening on port ${port}`)
+        globalPino.info(`Server is now listening on port ${port}`)
     }
 })

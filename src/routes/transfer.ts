@@ -124,7 +124,7 @@ app.post('/transfer', { schema }, async function (request, reply) {
     } catch (error: any) {
         pino.error({
             msg: 'Got an unhandled error',
-            error: error.message
+            error: error.message,
         })
         const telegramMessage = `Alert!!! ${error.message}`
         await sendTelegramNotification(telegramMessage, pino)
