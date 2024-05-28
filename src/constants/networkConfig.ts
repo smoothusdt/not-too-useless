@@ -21,8 +21,8 @@ const MainnetConfig: NetworkConfigInterface = {
     rpcUrl: 'https://api.trongrid.io',
     usdtAddressBase58: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
     justLendBase58: 'TU2MJ5Veik1LRAgjeSzEdvmDYx7mefJZvd',
-    routerBase58: '', // TODO: deploy the updated version
-    activationProxyBase58: '', // TODO: deploy
+    routerBase58: 'TYrnoaW74cWTfxL4mMvcgbAsXUM47vqfCu',
+    activationProxyBase58: 'TExpcfUabP2Yc9UaYtCirG6E6fVi6vzu3n',
     minRelayerEnergy: 150_000,
     delegateSunForApproval: 8000_000000,
     paySunForApproval: 60_000000,
