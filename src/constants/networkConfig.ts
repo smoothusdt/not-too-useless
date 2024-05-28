@@ -9,6 +9,7 @@ interface NetworkConfigInterface {
     routerBase58: string
     activationProxyBase58: string
     minRelayerEnergy: number
+    energyTopUp: number
     delegateSunForApproval: number
     paySunForApproval: number
     explorerUrl: string
@@ -24,6 +25,7 @@ const MainnetConfig: NetworkConfigInterface = {
     routerBase58: 'TYrnoaW74cWTfxL4mMvcgbAsXUM47vqfCu',
     activationProxyBase58: 'TExpcfUabP2Yc9UaYtCirG6E6fVi6vzu3n',
     minRelayerEnergy: 150_000,
+    energyTopUp: 250_000,
     delegateSunForApproval: 8000_000000,
     paySunForApproval: 60_000000,
     explorerUrl: 'https://tronscan.org/#',
@@ -39,6 +41,7 @@ const ShastaConfig: NetworkConfigInterface = {
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
     activationProxyBase58: 'TQw3TvELxNgECybDTNUHYmpWgxAmStbbMz',
     minRelayerEnergy: 0, // temporarily disabled auto-renewal
+    energyTopUp: 300_000,
     delegateSunForApproval: 1000_000000,
     paySunForApproval: 10_000000,
     explorerUrl: 'https://shasta.tronscan.org/#',
