@@ -74,9 +74,15 @@ app.post('/approve', { schema }, async function (request, reply) {
             msg: "The approval transaction is valid!"
         })
 
-        // Since we are using activation proxy, the user account will be
-        // activated automatically and enough TRX will be sent to pay for
-        // bandwidth of the approval transaction.
+        // TODO: check the user's bandwidth and account activation status before sending TRX.
+        // If the account has not been activated yet - we just need to make an empty transaction, without any TRX.
+        // If the account has enough bandwidth - we don't need this transaction at all.
+        // TODO: Can also optimize this by bundling TRX send and energy rental into a single transaction.
+        const trxTxID = await sendTrx(BigNumber('0.35'), decodedApproveTx.fromBase58Address, pino)
+        pino.info({
+            msg: "Sent 0.35 trx to the user to pay for bandwidth and active the account."
+        })
+
         const rentEnergyTxID = await rentEnergyForApproval(decodedApproveTx.fromBase58Address, pino)
         pino.info({
             msg: "Rented energy on JustLendDAO for the approval transaction!"
