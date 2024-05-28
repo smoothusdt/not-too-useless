@@ -27,12 +27,12 @@ if (!EnvironmentName) {
     throw new Error('ENVIRONMENT_NAME .env variable is not set')
 }
 export const TRXPrice = new BigNumber('0.12') // USD per TRX
+export const NotificationsChatId = NetworkConfig.notificationsChatId
 
 // chain constants
 export const ChainID = NetworkConfig.chainId
 export const ChainName = NetworkConfig.chainName
 export const ExplorerUrl = NetworkConfig.explorerUrl
-
 
 // tokens constants
 export const USDTAddressBase58 = NetworkConfig.usdtAddressBase58
@@ -40,7 +40,7 @@ export const USDTDecimals = 6
 export const USDTContract = tronWeb.contract(USDTAbi, USDTAddressBase58)
 export const TRXDecimals = 6
 
-// smooth constants
+// smooth onchain constants
 export const SmoothTransferFee = new BigNumber('1.5') // How much USDT users pay for each transfer
 export const SmoothFeeCollector = 'TPvSv9BofZrXP4NtkuSmY6X4qFt41yEF6x'
 export const SmoothRouterBase58 = NetworkConfig.routerBase58

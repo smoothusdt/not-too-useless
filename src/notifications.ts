@@ -1,5 +1,5 @@
 import { Logger } from "pino"
-import { ChainName, EnvironmentName, ExplorerUrl, JL_SCALE, JustLendContract, StakedSunPerEnergyUint, TRXDecimals, TRXPrice, tronWeb } from "./constants"
+import { ChainName, EnvironmentName, ExplorerUrl, JL_SCALE, JustLendContract, NotificationsChatId, StakedSunPerEnergyUint, TRXDecimals, TRXPrice, tronWeb } from "./constants"
 import { uintToHuman } from "./util"
 import { BigNumber } from "tronweb"
 import { getTxReceipt } from "./network"
@@ -10,7 +10,6 @@ if (!TG_BOT_TOKEN) {
 }
 
 export const BotUrl = 'https://api.telegram.org/bot' + TG_BOT_TOKEN
-const NotificationsChatId = -4249996549
 
 export async function sendTelegramNotification(message: string, pino: Logger) {
     message = `On ${ChainName}, ${EnvironmentName}.\n` + message

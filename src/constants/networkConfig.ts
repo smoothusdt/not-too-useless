@@ -14,6 +14,7 @@ interface NetworkConfigInterface {
     paySunForApproval: number
     explorerUrl: string
     stakedSunPerEnergyUnit: BigNumber // TODO: find a way to query it automatically since it slowly changes over time
+    notificationsChatId: number
 }
 
 const MainnetConfig: NetworkConfigInterface = {
@@ -29,7 +30,8 @@ const MainnetConfig: NetworkConfigInterface = {
     delegateSunForApproval: 8000_000000,
     paySunForApproval: 60_000000,
     explorerUrl: 'https://tronscan.org/#',
-    stakedSunPerEnergyUnit: new BigNumber('80327')
+    stakedSunPerEnergyUnit: new BigNumber('80327'),
+    notificationsChatId: -4249996549
 }
 
 const ShastaConfig: NetworkConfigInterface = {
@@ -45,7 +47,8 @@ const ShastaConfig: NetworkConfigInterface = {
     delegateSunForApproval: 1000_000000,
     paySunForApproval: 10_000000,
     explorerUrl: 'https://shasta.tronscan.org/#',
-    stakedSunPerEnergyUnit: new BigNumber('11294')
+    stakedSunPerEnergyUnit: new BigNumber('11294'),
+    notificationsChatId: -4256274967
 }
 
 export let NetworkConfig: NetworkConfigInterface
