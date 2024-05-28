@@ -57,3 +57,4 @@ export const RentEnergyFor = new BigNumber(86400 * 7) // always have 1 week of r
 export const ExtendIfRemainsLessThan = new BigNumber(86400 * 2) // extend energy rental if there are less than 2 days until liquidation
 export const RelayerCheckLoopInterval = 3600 * 10 * 1000 // 10 hours in milliseconds. Must be less than ExtendIfRemainsLessThan so that we have some time to extend rent.
 export const MinRelayerEnergy = NetworkConfig.minRelayerEnergy // buy more energy if we run lower than this number
+export const EnergyTopUp = NetworkConfig.energyTopUp // how much energy to buy if the balance is lower than MinRelayerEnergy

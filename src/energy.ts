@@ -1,5 +1,5 @@
 import { Logger } from "pino";
-import { ActivationProxyBase58, DelegateSunForApproval, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
+import { ActivationProxyBase58, DelegateSunForApproval, EnergyTopUp, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
 import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
 import { uintToHuman } from "./util";
@@ -338,7 +338,7 @@ export async function checkRelayerState(pino: Logger) {
         const { willBuyMoreEnergy, willExtendRental, relayerStatus } = await queryDetailedRelayerState(pino) 
         if (willBuyMoreEnergy || willExtendRental) {
             // If no need to buy more energy then we simply extend the rental
-            const energyToBuy = willBuyMoreEnergy ? new BigNumber(500000) : BigNumber(0)
+            const energyToBuy = willBuyMoreEnergy ? new BigNumber(EnergyTopUp) : BigNumber(0)
             await rentEnergyForRelayer(
                 energyToBuy,
                 RentEnergyFor,

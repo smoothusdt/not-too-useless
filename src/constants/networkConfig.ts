@@ -9,6 +9,7 @@ interface NetworkConfigInterface {
     routerBase58: string
     activationProxyBase58: string
     minRelayerEnergy: number
+    energyTopUp: number
     delegateSunForApproval: number
     paySunForApproval: number
     explorerUrl: string
@@ -21,9 +22,10 @@ const MainnetConfig: NetworkConfigInterface = {
     rpcUrl: 'https://api.trongrid.io',
     usdtAddressBase58: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
     justLendBase58: 'TU2MJ5Veik1LRAgjeSzEdvmDYx7mefJZvd',
-    routerBase58: '', // TODO: deploy the updated version
-    activationProxyBase58: '', // TODO: deploy
+    routerBase58: 'TYrnoaW74cWTfxL4mMvcgbAsXUM47vqfCu',
+    activationProxyBase58: 'TExpcfUabP2Yc9UaYtCirG6E6fVi6vzu3n',
     minRelayerEnergy: 150_000,
+    energyTopUp: 250_000,
     delegateSunForApproval: 8000_000000,
     paySunForApproval: 60_000000,
     explorerUrl: 'https://tronscan.org/#',
@@ -37,8 +39,9 @@ const ShastaConfig: NetworkConfigInterface = {
     usdtAddressBase58: 'TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs',
     justLendBase58: 'TJRrrftRMv5mF2iv7C6FtFuqgbHjvRxARd',
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
-    activationProxyBase58: 'TAdYrD7GSPZtrAQG6ZCNUmKRxGfKRaSDgW',
+    activationProxyBase58: 'TQw3TvELxNgECybDTNUHYmpWgxAmStbbMz',
     minRelayerEnergy: 0, // temporarily disabled auto-renewal
+    energyTopUp: 300_000,
     delegateSunForApproval: 1000_000000,
     paySunForApproval: 10_000000,
     explorerUrl: 'https://shasta.tronscan.org/#',
