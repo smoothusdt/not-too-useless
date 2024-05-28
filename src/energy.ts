@@ -272,20 +272,43 @@ export async function returnRelayerEnergy(
     )
 }
 
+export async function queryEnergyUsage(addressBase58: string, pino: Logger) {
+    const resources = await tronWeb.trx.getAccountResources(addressBase58)
+    pino.info({
+        msg: "Fetched resources",
+        addressBase58,
+        relayerResources: resources,
+    })
+
+    const energyUsed: number = resources.EnergyUsed || 0;
+    const energyLimit: number = resources.EnergyLimit || 0;
+    const energyBalance = energyLimit - energyUsed
+    const energyPercentageUsed = (energyUsed / energyLimit * 100).toFixed(2)
+
+    // to be embeded into a more detailed message
+    const informationalString = `${energyUsed} / ${energyLimit} (${energyPercentageUsed}%) is used. ${energyBalance} energy is available`
+    return {
+        energyUsed,
+        energyLimit,
+        energyBalance,
+        energyPercentageUsed,
+        informationalString
+    }
+}
+
 export async function queryDetailedRelayerState(pino: Logger) {
     pino.info({
         msg: 'Fetching & logging Smooth USDT Relayer state'
     })
-    const relayerResources = await tronWeb.trx.getAccountResources(RelayerBase58Address)
-    pino.info({
-        msg: "Fetched relayer resources",
-        relayerResources,
-    })
+    
+    const {
+        energyBalance: relayerEnergyBalance,
+        informationalString: relayerEnergyInformation,
+    } = await queryEnergyUsage(RelayerBase58Address, pino)
 
-    const relayerEenergyUsed: number = relayerResources.EnergyUsed || 0;
-    const relayerEnergyLimit: number = relayerResources.EnergyLimit || 0;
-    const relayerEnergyBalance = relayerEnergyLimit - relayerEenergyUsed
-    const energyPercentageUsed = (relayerEenergyUsed / relayerEnergyLimit * 100).toFixed(2)
+    const {
+        informationalString: justLendEnergyInformation,
+    } = await queryEnergyUsage(RelayerBase58Address, pino)
 
     const relayerTrxBalance = uintToHuman(await tronWeb.trx.getBalance(RelayerBase58Address), TRXDecimals).toFixed(0)
 
@@ -296,7 +319,8 @@ export async function queryDetailedRelayerState(pino: Logger) {
     const willExtendRental = relayerStatus.secondsUntilLiquidation.lt(ExtendIfRemainsLessThan)
 
     const message = `Relayer energetical state.
-Relayer's energy: ${relayerEenergyUsed} / ${relayerEnergyLimit} (${energyPercentageUsed}%) is used. ${relayerEnergyBalance} energy is available.
+Relayer's energy: ${relayerEnergyInformation}.
+JustLend's sponsorable energy: ${justLendEnergyInformation}.
 Relayer's balance: ${relayerTrxBalance} TRX.
 Energy rental liquidates in: ${liquidatesIn} days.
 Will buy more energy: ${willBuyMoreEnergy} (threshold: ${MinRelayerEnergy} energy).

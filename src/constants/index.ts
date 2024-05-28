@@ -49,6 +49,7 @@ export const SmoothRouterBase58 = NetworkConfig.routerBase58
 export const DelegateSunForApproval = NetworkConfig.delegateSunForApproval
 export const PaySunForApproval = NetworkConfig.paySunForApproval
 export const JustLendBase58 = NetworkConfig.justLendBase58
+export const JustLendCreator = NetworkConfig.justLendCreator
 export const JustLendContract = tronWeb.contract(JustLendAbi, JustLendBase58)
 export const StakedSunPerEnergyUint = NetworkConfig.stakedSunPerEnergyUnit // how much sun (1 sun = 1e-6 trx) we need to stake to get 1 energy unit per day
 export const JL_SCALE = new BigNumber(10).pow(18) // JL = JustLend.

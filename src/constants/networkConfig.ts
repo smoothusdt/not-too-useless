@@ -6,6 +6,7 @@ interface NetworkConfigInterface {
     rpcUrl: string
     usdtAddressBase58: string
     justLendBase58: string
+    justLendCreator: string
     routerBase58: string
     minRelayerEnergy: number
     energyTopUp: number
@@ -20,6 +21,7 @@ const MainnetConfig: NetworkConfigInterface = {
     chainName: 'mainnet',
     rpcUrl: 'https://api.trongrid.io',
     usdtAddressBase58: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+    justLendCreator: 'TZHPiv9dNUZ9s8XLn5ihVvYc8GHFbwEAeM',
     justLendBase58: 'TU2MJ5Veik1LRAgjeSzEdvmDYx7mefJZvd',
     routerBase58: 'TYrnoaW74cWTfxL4mMvcgbAsXUM47vqfCu',
     minRelayerEnergy: 150_000,
@@ -35,6 +37,7 @@ const ShastaConfig: NetworkConfigInterface = {
     chainName: 'shasta',
     rpcUrl: 'https://api.shasta.trongrid.io',
     usdtAddressBase58: 'TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs',
+    justLendCreator: 'TKUtZpANJj5dMS8oQUbWKZxtq5ujqvziX3', // doesn't matter
     justLendBase58: 'TJRrrftRMv5mF2iv7C6FtFuqgbHjvRxARd',
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
     minRelayerEnergy: 0, // temporarily disabled auto-renewal
