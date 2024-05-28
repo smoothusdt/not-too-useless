@@ -1,5 +1,5 @@
 import { Logger } from "pino";
-import { DelegateSunForApproval, EnergyTopUp, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
+import { DelegateSunForApproval, EnergyTopUp, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, JustLendCreator, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
 import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
 import { uintToHuman } from "./util";
@@ -308,7 +308,7 @@ export async function queryDetailedRelayerState(pino: Logger) {
 
     const {
         informationalString: justLendEnergyInformation,
-    } = await queryEnergyUsage(RelayerBase58Address, pino)
+    } = await queryEnergyUsage(JustLendCreator, pino)
 
     const relayerTrxBalance = uintToHuman(await tronWeb.trx.getBalance(RelayerBase58Address), TRXDecimals).toFixed(0)
 
