@@ -37,7 +37,7 @@ const ShastaConfig: NetworkConfigInterface = {
     usdtAddressBase58: 'TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs',
     justLendBase58: 'TJRrrftRMv5mF2iv7C6FtFuqgbHjvRxARd',
     routerBase58: 'TFAiKcphiJwyLNw2iQ9iJJauvz7PboisEH',
-    activationProxyBase58: 'TGRaBLJhDKU2BpBBxAsVfwvHT2cEZ5s3Hj',
+    activationProxyBase58: 'TQw3TvELxNgECybDTNUHYmpWgxAmStbbMz',
     minRelayerEnergy: 0, // temporarily disabled auto-renewal
     delegateSunForApproval: 1000_000000,
     paySunForApproval: 10_000000,
