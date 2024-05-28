@@ -29,7 +29,7 @@ const MainnetConfig: NetworkConfigInterface = {
     delegateSunForApproval: 8000_000000,
     paySunForApproval: 60_000000,
     explorerUrl: 'https://tronscan.org/#',
-    stakedSunPerEnergyUnit: new BigNumber('79260')
+    stakedSunPerEnergyUnit: new BigNumber('80327')
 }
 
 const ShastaConfig: NetworkConfigInterface = {
