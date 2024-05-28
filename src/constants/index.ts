@@ -44,7 +44,6 @@ export const TRXDecimals = 6
 export const SmoothTransferFee = new BigNumber('1.5') // How much USDT users pay for each transfer
 export const SmoothFeeCollector = 'TQyMmeSrADWyxZsV6YvVu6XDV8hdq72ykb'
 export const SmoothRouterBase58 = NetworkConfig.routerBase58
-export const ActivationProxyBase58 = NetworkConfig.activationProxyBase58
 
 // energy constants
 export const DelegateSunForApproval = NetworkConfig.delegateSunForApproval

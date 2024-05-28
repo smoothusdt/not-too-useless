@@ -1,18 +1,12 @@
 import { Logger } from "pino";
-import { ActivationProxyBase58, DelegateSunForApproval, EnergyTopUp, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
+import { DelegateSunForApproval, EnergyTopUp, ExtendIfRemainsLessThan, JL_SCALE, JustLendBase58, JustLendContract, MinRelayerEnergy, PaySunForApproval, RelayerBase58Address, RelayerCheckLoopInterval, RentEnergyFor, StakedSunPerEnergyUint, TRXDecimals, tronWeb } from "./constants";
 import { broadcastTx, makeBlockHeader } from "./network";
 import { BigNumber } from "tronweb";
 import { uintToHuman } from "./util";
 import { produceError, sendTelegramNotification } from "./notifications";
 import { Mutex } from "async-mutex";
 
-export async function rentEnergy(
-    to: string,
-    sunToDelegate: number,
-    sunToPay: number,
-    contractToCall: string,
-    pino: Logger,
-): Promise<string> {
+export async function rentEnergy(to: string, sunToDelegate: number, sunToPay: number, pino: Logger): Promise<string> {
     pino.info({
         msg: 'Will execute a transaction to rent energy on JustLendDAO',
         to,
@@ -27,7 +21,7 @@ export async function rentEnergy(
     ]
     const startTs = Date.now()
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
-        contractToCall,
+        JustLendBase58,
         functionSelector,
         {
             callValue: sunToPay, // transferring 60 trx for the rent + security deposit.Should be enough unless prices on JustLendDAO spike hugely.
@@ -59,17 +53,11 @@ export async function rentEnergyForApproval(to: string, pino: Logger): Promise<s
         to,
         DelegateSunForApproval,
         PaySunForApproval,
-        ActivationProxyBase58,
         pino,
     )
 }
 
-export async function returnEnergy(
-    wasRentedTo: string,
-    returnSun: number,
-    contractToCall: string,
-    pino: Logger,
-): Promise<string> {
+export async function returnEnergy(wasRentedTo: string, returnSun: number, pino: Logger): Promise<string> {
     const functionSelector = 'returnResource(address,uint256,uint256)';
     const parameter = [
         { type: 'address', value: wasRentedTo },
@@ -78,7 +66,7 @@ export async function returnEnergy(
     ]
     const startTs = Date.now()
     const { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
-        contractToCall,
+        JustLendBase58,
         functionSelector,
         {
             blockHeader: await makeBlockHeader(pino),
@@ -107,7 +95,6 @@ export async function finishEnergyRentalForApproval(wasRentedTo: string, pino: L
     return await returnEnergy(
         wasRentedTo,
         DelegateSunForApproval,
-        ActivationProxyBase58,
         pino
     )
 }
@@ -261,7 +248,6 @@ export async function rentEnergyForRelayer(
         RelayerBase58Address,
         extraSunToDelegate.decimalPlaces(0).toNumber(),
         sunToDepositNow.decimalPlaces(0).toNumber(),
-        JustLendBase58,
         pino,
     )
 }
@@ -282,7 +268,6 @@ export async function returnRelayerEnergy(
     return await returnEnergy(
         RelayerBase58Address,
         sunToReturn.decimalPlaces(0).toNumber(),
-        JustLendBase58,
         pino
     )
 }
