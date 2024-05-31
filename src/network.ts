@@ -50,7 +50,7 @@ export async function getTxReceipt(txID: string, pino: Logger): Promise<Transact
             return txInfo
         }
         if (Date.now() - startTs > timeout) {
-            await produceError('Could not get the transaction receipt after a long time! This is extremly bad!!!!', { txID }, pino)
+            await produceError('Could not get the transaction receipt after a long time!', { txID }, pino)
         }
         await new Promise(resolve => setTimeout(resolve, 1000))
     }
