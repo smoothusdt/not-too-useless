@@ -28,6 +28,8 @@ if (!EnvironmentName) {
 }
 export const TRXPrice = new BigNumber('0.12') // USD per TRX
 export const NotificationsChatId = NetworkConfig.notificationsChatId
+export const MaxPinAttempts = 3
+export const DatabaseName = NetworkConfig.databaseName
 
 // chain constants
 export const ChainID = NetworkConfig.chainId

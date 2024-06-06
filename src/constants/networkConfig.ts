@@ -15,6 +15,7 @@ interface NetworkConfigInterface {
     explorerUrl: string
     stakedSunPerEnergyUnit: BigNumber // TODO: find a way to query it automatically since it slowly changes over time
     notificationsChatId: number
+    databaseName: string
 }
 
 const MainnetConfig: NetworkConfigInterface = {
@@ -31,7 +32,8 @@ const MainnetConfig: NetworkConfigInterface = {
     paySunForApproval: 60_000000,
     explorerUrl: 'https://tronscan.org/#',
     stakedSunPerEnergyUnit: new BigNumber('80327'),
-    notificationsChatId: -4249996549
+    notificationsChatId: -4249996549,
+    databaseName: 'postgres'
 }
 
 const ShastaConfig: NetworkConfigInterface = {
@@ -48,7 +50,8 @@ const ShastaConfig: NetworkConfigInterface = {
     paySunForApproval: 10_000000,
     explorerUrl: 'https://shasta.tronscan.org/#',
     stakedSunPerEnergyUnit: new BigNumber('11294'),
-    notificationsChatId: -4256274967
+    notificationsChatId: -4256274967,
+    databaseName: 'shasta'
 }
 
 export let NetworkConfig: NetworkConfigInterface

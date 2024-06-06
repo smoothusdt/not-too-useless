@@ -4,10 +4,11 @@ dotenv.config()
 
 import { app } from './app'
 import './routes'
-import { globalPino } from "./constants"
+import { DatabaseName, globalPino } from "./constants"
 import { updateLatestConfirmedBlockLoop } from "./network"
 import { checkRelayerStateLoop } from "./energy"
 import { sendTelegramNotification } from "./notifications"
+import { connectToDB } from "./db"
 
 const port = Number(process.env.PORT ?? '3000')
 const host = process.env.HOST ?? '0.0.0.0'
@@ -15,6 +16,14 @@ const host = process.env.HOST ?? '0.0.0.0'
 updateLatestConfirmedBlockLoop(globalPino)
 checkRelayerStateLoop(globalPino)
 sendTelegramNotification('API started', globalPino)
+
+connectToDB({
+    host: process.env.DB_HOST,
+    database: DatabaseName,
+    port: parseInt(process.env.DB_PORT),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+}, globalPino)
 
 // Run the server!
 app.listen({ port, host }, function (err) {

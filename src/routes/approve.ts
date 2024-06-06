@@ -137,5 +137,7 @@ app.post('/approve', { schema }, async function (request, reply) {
         const telegramMessage = `Alert!!! ${error.message}`
         await sendTelegramNotification(telegramMessage, pino)
         throw error
+    } finally {
+        pino.info({ msg: "Finished processing request" })
     }
 })
