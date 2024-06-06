@@ -7,7 +7,7 @@ import { getEncryptionKey } from '../db';
 const schema = {
     body: Type.Object({
         deviceId: Type.String(),
-        pin: Type.Number()
+        pin: Type.String()
     }),
 }
 

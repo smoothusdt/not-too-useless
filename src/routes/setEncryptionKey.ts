@@ -8,7 +8,7 @@ const schema = {
     body: Type.Object({
         deviceId: Type.String(),
         encryptionKey: Type.String(),
-        pin: Type.Number()
+        pin: Type.String()
     }),
 }
 
