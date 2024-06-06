@@ -3,6 +3,7 @@ import { app } from "../app";
 import { globalPino } from '../constants';
 import { sendTelegramNotification } from '../notifications';
 import { getEncryptionKey } from '../db';
+import { PinError } from '../errors';
 
 const schema = {
     body: Type.Object({
@@ -30,12 +31,12 @@ app.post('/getEncryptionKey', { schema }, async function (request, reply) {
                 encryptionKey,
             })
         } catch (error: any) {
-            // this can happen if the pin is incorrect, so it's not critical
-            // TODO: differentiate between our, expected, errors and unexpected cringe
-            pino.info({ msg: "Not returning encryption key due to", error: error.message })
+            if (!(error instanceof PinError)) throw error // something unknown 
+
+            pino.info({ msg: "Not returning encryption key due to", error: error.toJson() })
             return reply.code(429).send({
                 success: false,
-                error: error.message
+                error: error.toJson()
             })
         }
 

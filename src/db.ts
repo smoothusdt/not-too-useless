@@ -1,6 +1,7 @@
 import pg from 'pg'
 import { Logger } from 'pino'
 import { MaxPinAttempts } from './constants'
+import { TooManyAttemptsError, UnknownDeviceIdError, WrongPinError } from './errors'
 
 export interface IDBParams {
     user: string
@@ -29,18 +30,22 @@ export async function getEncryptionKey(deviceId: string, enteredPin: string): Pr
     const query = 'SELECT pin, encryption_key, incorrect_attempts FROM pin_code WHERE device_id=$1'
     const rows = (await client.query(query, [deviceId])).rows
 
-    if (rows.length === 0) throw new Error('This deviceId is not known')
+    if (rows.length === 0) throw new UnknownDeviceIdError()
 
     const storedPin: string = rows[0].pin
     const encryptionKey: string = rows[0].encryption_key
     const incorrectAttempts: number = rows[0].incorrect_attempts
 
-    if (incorrectAttempts >= MaxPinAttempts) throw new Error('Too many incorrect attempts')
-    
-    if (enteredPin === storedPin) return encryptionKey // all good
+    if (incorrectAttempts >= MaxPinAttempts) throw new TooManyAttemptsError()
+
+    if (enteredPin === storedPin) { // all good
+        // Reset incorrectAttempts
+        await client.query('UPDATE pin_code SET incorrect_attempts=0 WHERE device_id=$2', [deviceId])
+        return encryptionKey // and return the key
+    }
 
     // implicit else. Wrong pin. Increase number of incorrect attempts
     const updateQuery = 'UPDATE pin_code SET incorrect_attempts=$1 WHERE device_id=$2'
     await client.query(updateQuery, [incorrectAttempts + 1, deviceId])
-    throw new Error('Wrong pin')
+    throw new WrongPinError(MaxPinAttempts - incorrectAttempts - 1)
 }
