@@ -37,13 +37,18 @@ export class WrongPinError extends PinError {
     }
 }
 
-const AllErrors = [
-    UnknownDeviceIdError,
-    TooManyAttemptsError,
-    WrongPinError,
-]
-
-export const CodeToError = {}
-AllErrors.forEach((errType) => {
-    // CodeToError[errType.]
-})
+// Accepts an object with a mandatory "code" property and constructs
+// an error out of it.
+export function makeError(obj: any): SmoothError {
+    const code: string = obj.code
+    switch (code) {
+        case UnknownDeviceIdError.code:
+            return new UnknownDeviceIdError()
+        case TooManyAttemptsError.code:
+            return new TooManyAttemptsError()
+        case WrongPinError.code:
+            return new WrongPinError(obj.remainingAttempts)
+        default:
+            throw new Error(`Unrecognized error code ${code}`)
+    }
+}
