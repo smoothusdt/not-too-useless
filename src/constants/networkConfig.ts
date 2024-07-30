@@ -31,7 +31,7 @@ const MainnetConfig: NetworkConfigInterface = {
     paySunForApproval: 60_000000,
     explorerUrl: 'https://tronscan.org/#',
     stakedSunPerEnergyUnit: new BigNumber('80327'),
-    notificationsChatId: -4249996549
+    notificationsChatId: 7244806650
 }
 
 const ShastaConfig: NetworkConfigInterface = {
