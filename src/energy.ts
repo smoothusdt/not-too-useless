@@ -137,7 +137,7 @@ export async function queryRelayerEnergyRentalStatus(pino: Logger): Promise<Ener
     let rentedAmount = new BigNumber(rental.amount.toString()) // rented TRX (in Sun)
 
     if (rentedAmount.eq(0)) {
-        rentedAmount = 1 // TODO: unhack this once there is at least one user :)
+        rentedAmount = new BigNumber(1) // TODO: unhack this once there is at least one user :)
         // throw new Error('Relayer delegated TRX is zero, which is extremely bad!')
     }
 
