@@ -134,10 +134,11 @@ export async function queryRelayerEnergyRentalStatus(pino: Logger): Promise<Ener
         RelayerBase58Address, // who receives energy
         1, // resource type (1 = energy)
     ).call()
-    const rentedAmount = new BigNumber(rental.amount.toString()) // rented TRX (in Sun)
+    let rentedAmount = new BigNumber(rental.amount.toString()) // rented TRX (in Sun)
 
     if (rentedAmount.eq(0)) {
-        throw new Error('Relayer delegated TRX is zero, which is extremely bad!')
+        rentedAmount = 1 // TODO: unhack this once there is at least one user :)
+        // throw new Error('Relayer delegated TRX is zero, which is extremely bad!')
     }
 
     const rentalRateRaw = await JustLendContract.methods._rentalRate(
