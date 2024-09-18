@@ -25,7 +25,7 @@ const MainnetConfig: NetworkConfigInterface = {
     justLendCreator: 'TZHPiv9dNUZ9s8XLn5ihVvYc8GHFbwEAeM',
     justLendBase58: 'TU2MJ5Veik1LRAgjeSzEdvmDYx7mefJZvd',
     routerBase58: 'TYrnoaW74cWTfxL4mMvcgbAsXUM47vqfCu',
-    minRelayerEnergy: 0,
+    minRelayerEnergy: 150_000,
     energyTopUp: 250_000,
     delegateSunForApproval: 8000_000000,
     paySunForApproval: 60_000000,
